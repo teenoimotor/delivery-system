@@ -100,6 +100,7 @@
   .s-pending{background:#fef3c7;color:#92400e;}
   .s-inprogress{background:#dbeafe;color:#1d4ed8;}
   .s-done{background:#d1fae5;color:#065f46;}
+  .s-cancelled{background:#fee2e2;color:#991b1b;}
   .filter-tabs{display:flex;gap:6px;margin-bottom:12px;background:#fff;padding:4px;border-radius:10px;box-shadow:var(--shadow);}
   .filter-tabs button{flex:1;background:transparent;border:none;padding:8px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;color:var(--muted);font-family:inherit;}
   .filter-tabs button.active{background:var(--blue);color:#fff;}
@@ -111,6 +112,17 @@
   .nav-btn:active{background:#dbeafe;}
   .btn-edit-job{margin-top:8px;background:#fff;border:1px solid var(--blue);color:var(--blue);padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;}
   .btn-edit-job:active{background:#dbeafe;}
+  .btn-cancel-job{margin-top:8px;margin-left:6px;background:#fff;border:1px solid var(--danger);color:var(--danger);padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;}
+  .btn-cancel-job:active{background:#fee2e2;}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:200;padding:20px;}
+  .modal-overlay.show{display:flex;}
+  .modal-box{background:#fff;border-radius:16px;padding:20px;width:100%;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,.18);}
+  .modal-title{font-size:16px;font-weight:700;margin-bottom:6px;}
+  .modal-desc{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  .modal-box textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:14px;font-family:inherit;resize:none;box-sizing:border-box;}
+  .modal-actions{display:flex;gap:8px;margin-top:14px;}
+  .modal-btn-close{flex:1;background:#f3f4f6;border:none;padding:12px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
+  .modal-btn-confirm{flex:1;background:var(--danger);color:#fff;border:none;padding:12px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
   .edit-banner{background:#fef3c7;border:1px solid #fbbf24;color:#92400e;border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:10px;display:none;}
   .edit-banner.show{display:block;}
   .maps-preview{margin-top:6px;font-size:12px;}
@@ -137,7 +149,7 @@
 
   <div id="formSection">
 
-    <div class="edit-banner" id="editBanner">✏️ กำลังแก้ไขงาน — คนขับยังไม่ได้รับงาน <button onclick="cancelEdit()" style="float:right;background:none;border:none;font-size:13px;color:#92400e;cursor:pointer;font-weight:600;">✕ ยกเลิก</button></div>
+    <div class="edit-banner" id="editBanner">กำลังแก้ไขงาน — คนขับยังไม่ได้รับงาน <button onclick="cancelEdit()" style="float:right;background:none;border:none;font-size:13px;color:#92400e;cursor:pointer;font-weight:600;">ยกเลิก</button></div>
 
     <!-- 1. Customer Info -->
     <div class="card">
@@ -244,8 +256,9 @@
     <div class="filter-tabs">
       <button data-filter="all" class="active">ทั้งหมด</button>
       <button data-filter="pending">รอจัดส่ง</button>
-      <button data-filter="inprogress">กำลังจัดส่ง</button>
-      <button data-filter="done">เสร็จสิ้น</button>
+      <button data-filter="กำลังจัดส่ง">กำลังจัดส่ง</button>
+      <button data-filter="เสร็จสิ้น">เสร็จสิ้น</button>
+      <button data-filter="ยกเลิก">ยกเลิก</button>
     </div>
     <div id="historyList">
       <div class="empty-state">กำลังโหลด...</div>
@@ -256,11 +269,24 @@
 
 <div class="footer-bar" id="footerForm">
   <button class="btn-clear" id="btnClear">ล้าง</button>
-  <button class="btn-submit" id="btnSubmit">📤 บันทึกงานจัดส่ง</button>
+  <button class="btn-submit" id="btnSubmit">บันทึกงานจัดส่ง</button>
 </div>
 
 <div class="footer-bar" id="footerHistory" style="display:none;">
   <button class="nav-btn" id="btnReload">รีเฟรช</button>
+</div>
+
+<!-- Cancel Modal -->
+<div class="modal-overlay" id="cancelModal">
+  <div class="modal-box">
+    <div class="modal-title">ยกเลิกการจัดส่ง</div>
+    <div class="modal-desc">กรุณาระบุเหตุผลการยกเลิก</div>
+    <textarea id="cancelReason" rows="3" placeholder="เหตุผลการยกเลิก..."></textarea>
+    <div class="modal-actions">
+      <button class="modal-btn-close" onclick="hideCancelModal()">ปิด</button>
+      <button class="modal-btn-confirm" onclick="confirmCancelAssign()">ยืนยันยกเลิก</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -268,7 +294,7 @@
 <!-- Success Overlay -->
 <div class="success-overlay" id="successOverlay">
   <div class="success-card">
-    <h2>มอบหมายงานเรียบร้อย ✅</h2>
+    <h2>มอบหมายงานเรียบร้อย</h2>
     <p class="desc">แจ้งเตือน LINE ไปยังพนักงานขับรถแล้ว</p>
     <div class="success-summary" id="sucSummary"></div>
     <div class="success-actions">
@@ -357,7 +383,7 @@ function updateMapsPreview(){
   const v = $('googleMapsUrl').value.trim();
   const el = $('mapsPreview');
   if (!v){ el.innerHTML=''; return; }
-  el.innerHTML = `<a href="${encodeURI(v)}" target="_blank">🗺 เปิด Google Maps</a>`;
+  el.innerHTML = `<a href="${encodeURI(v)}" target="_blank">เปิด Google Maps</a>`;
 }
 
 /* ========== Load Drivers ========== */
@@ -388,7 +414,7 @@ function renderDrivers(){
   const html = `<div class="driver-grid">${state.drivers.map(d=>`
     <div class="driver-option${d.busy?' busy':''}" data-id="${d.userId}" data-name="${escape_(d.name)}" onclick="selectDriver('${d.userId}','${escape_(d.name)}')">
       <div class="dname">${escape_(d.name)}</div>
-      <div class="dstatus">${d.busy?'📦 กำลังส่ง':'✅ ว่าง'}</div>
+      <div class="dstatus">${d.busy?'กำลังส่ง':'ว่าง'}</div>
     </div>`).join('')}</div>`;
   $('driverSection').innerHTML = html;
 }
@@ -463,7 +489,7 @@ async function submitAssign(){
     if (state.liffReady && liff.isInClient()){
       try{
         await liff.sendMessages([{ type:'text',
-          text:`✅ บันทึกงานจัดส่งแล้ว\nลูกค้า: ${custName}\nวันที่: ${deliveryDate} ${deliveryTime}\nรถ: ${bikeModel} สี${bikeColor}\nรับรถ: ${pickupLoc}${googleMapsUrl?'\nพิกัด: '+googleMapsUrl:''}${collectAmount?'\nยอดเรียกเก็บ: '+collectAmount+' บาท':''}`
+          text:`บันทึกงานจัดส่งแล้ว\nลูกค้า: ${custName}\nวันที่: ${deliveryDate} ${deliveryTime}\nรถ: ${bikeModel} สี${bikeColor}\nรับรถ: ${pickupLoc}${googleMapsUrl?'\nพิกัด: '+googleMapsUrl:''}${collectAmount?'\nยอดเรียกเก็บ: '+collectAmount+' บาท':''}`
         }]);
       }catch(e){}
     }
@@ -482,7 +508,7 @@ async function submitAssign(){
 /* ========== Success Overlay ========== */
 function showSuccess(d){
   const collectRow = d.collectAmount ? `<div class="srow"><span class="lab">ยอดเรียกเก็บ</span><span class="val">${parseFloat(d.collectAmount).toLocaleString()} บาท</span></div>` : '';
-  const mapsRow = d.googleMapsUrl ? `<div class="srow"><span class="lab">พิกัด</span><span class="val"><a href="${encodeURI(d.googleMapsUrl)}" target="_blank" style="color:var(--blue);">🗺 เปิดแผนที่</a></span></div>` : '';
+  const mapsRow = d.googleMapsUrl ? `<div class="srow"><span class="lab">พิกัด</span><span class="val"><a href="${encodeURI(d.googleMapsUrl)}" target="_blank" style="color:var(--blue);">เปิดแผนที่</a></span></div>` : '';
   $('sucSummary').innerHTML = `
     <div class="srow"><span class="lab">ลูกค้า</span><span class="val">${escape_(d.custName)}</span></div>
     <div class="srow"><span class="lab">วันที่</span><span class="val">${d.deliveryDate} ${d.deliveryTime}</span></div>
@@ -541,14 +567,16 @@ function renderHistory(){
   });
   if (!items.length){ $('historyList').innerHTML='<div class="empty-state">ยังไม่มีรายการ</div>'; return; }
   const html = items.map(h=>{
-    const sCls = h.status==='เสร็จสิ้น'?'s-done':h.status==='กำลังจัดส่ง'?'s-inprogress':'s-pending';
-    const sLabel = h.status==='เสร็จสิ้น'?'เสร็จสิ้น':h.status==='กำลังจัดส่ง'?'กำลังจัดส่ง':'รอจัดส่ง';
+    const sCls = h.status==='เสร็จสิ้น'?'s-done':h.status==='กำลังจัดส่ง'?'s-inprogress':h.status==='ยกเลิก'?'s-cancelled':'s-pending';
+    const sLabel = h.status==='เสร็จสิ้น'?'เสร็จสิ้น':h.status==='กำลังจัดส่ง'?'กำลังจัดส่ง':h.status==='ยกเลิก'?'ยกเลิก':'รอจัดส่ง';
     const isPending = !h.status || h.status==='pending' || h.status==='รอจัดส่ง';
     const dueMs = h.deliveryDate ? new Date(`${String(h.deliveryDate).slice(0,10)}T${h.deliveryTime||'00:00'}`).getTime() : Infinity;
     const canEdit = isPending && (dueMs > Date.now());
-    const editBtn = canEdit
-      ? `<button class="btn-edit-job" onclick="loadAssignToForm('${h.assignId||h.id||''}')">✏️ แก้ไข</button>`
+    const actionBtns = canEdit
+      ? `<button class="btn-edit-job" onclick="loadAssignToForm('${h.assignId||h.id||''}')">แก้ไข</button><button class="btn-cancel-job" onclick="showCancelModal('${h.assignId||h.id||''}')">ยกเลิกงาน</button>`
       : (!isPending ? '' : `<span style="font-size:11px;color:var(--muted);">เลยวันนัดแล้ว</span>`);
+    const cancelNote = h.status==='ยกเลิก' && h.cancelReason
+      ? `<div style="font-size:12px;color:var(--danger);margin-top:4px;">เหตุผล: ${escape_(h.cancelReason)}</div>` : '';
     return `
     <div class="history-item">
       <div class="hi-head">
@@ -558,10 +586,36 @@ function renderHistory(){
       <div class="hi-cust">${escape_(h.customerName||h.customerFirstName||'')}${h.customerLastName?' '+escape_(h.customerLastName):''}</div>
       <div class="hi-route">${escape_(h.pickupLocation||'-')} → ${escape_(h.deliveryLocation||'-')}</div>
       <div class="hi-driver">คนขับ: ${escape_(h.driverName||'-')}</div>
-      ${editBtn}
+      ${cancelNote}
+      ${actionBtns}
     </div>`;
   }).join('');
   $('historyList').innerHTML = html;
+}
+
+/* ========== Cancel Assignment ========== */
+function showCancelModal(assignId){
+  state.cancelAssignId = assignId;
+  $('cancelReason').value = '';
+  $('cancelModal').classList.add('show');
+}
+function hideCancelModal(){
+  $('cancelModal').classList.remove('show');
+  state.cancelAssignId = null;
+}
+async function confirmCancelAssign(){
+  const assignId = state.cancelAssignId;
+  if (!assignId) return;
+  const reason = $('cancelReason').value.trim();
+  const bodyStr = JSON.stringify({ action:'cancelAssign', assignId, cancelReason:reason, salesId:state.profile?.userId||'' });
+  try{ await fetch(APPS_SCRIPT_URL,{method:'POST',mode:'no-cors',body:bodyStr}); }catch(_){}
+  try{
+    const q = new URLSearchParams({ action:'cancelAssign', assignId, cancelReason:reason });
+    await fetch(APPS_SCRIPT_URL+'?'+q.toString(),{mode:'no-cors'});
+  }catch(_){}
+  hideCancelModal();
+  toast('ยกเลิกงานเรียบร้อย');
+  setTimeout(loadHistory, 1200);
 }
 
 function escape_(s){ return String(s||'-').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -592,24 +646,7 @@ function loadAssignToForm(assignId){
     $('pickupBranch').value = '__other__'; $('pickupOther').style.display='block'; $('pickupOther').value=pu;
   }
 
-  // delivery address
-  clearDeliveryAddress();
-  const dist = h.deliveryDistrict||'';
-  const sub  = h.deliverySubdistrict||'';
-  const prov = h.deliveryProvince||'';
-  if (dist){
-    $('districtInput').value = dist;
-    // find matching district entry to populate subdistricts
-    const entry = allDistricts.find(d => d.name===dist && (!prov || d.province===prov));
-    if (entry){
-      selectDistrict(entry.id);
-      if (sub) $('subdistrictSelect').value = sub;
-    } else {
-      // data not loaded yet — just fill text + province
-      $('provinceInput').value = prov; $('provinceRow').style.display = prov ? 'block' : 'none';
-    }
-  }
-  $('googleMapsUrl').value = h.googleMapsUrl||'';
+  $('googleMapsUrl').value  = h.googleMapsUrl||'';
   updateMapsPreview();
 
   $('editBanner').classList.add('show');

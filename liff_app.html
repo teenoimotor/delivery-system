@@ -221,20 +221,20 @@
 
   <!-- Pending assignments from sales -->
   <div class="assign-card" id="assignCard" style="display:none;">
-    <h2>📋 งานที่ได้รับมอบหมาย</h2>
+    <h2>งานที่ได้รับมอบหมาย</h2>
     <div id="assignList"><div class="assign-loading">กำลังโหลด...</div></div>
   </div>
 
   <!-- Draft list -->
   <div class="draft-card" id="draftCard" style="display:none;">
-    <h2>📝 ร่างที่บันทึกไว้</h2>
+    <h2>ร่างที่บันทึกไว้</h2>
     <div id="draftList"><div class="draft-loading">กำลังโหลด...</div></div>
     <button class="btn-new-trip" id="btnNewTrip">+ เริ่มเที่ยวใหม่</button>
   </div>
 
   <!-- Assignment banner -->
   <div class="assign-banner" id="assignBanner" style="display:none;">
-    📋 กำลังบันทึกงานที่ได้รับมอบหมาย
+    กำลังบันทึกงานที่ได้รับมอบหมาย
   </div>
 
   <!-- Draft banner -->
@@ -423,7 +423,7 @@
       <span class="success-status-dot"></span>
       <span>สถานะ: รออนุมัติ</span>
     </div>
-    <h2>ส่งข้อมูลเรียบร้อย ✅</h2>
+    <h2>ส่งข้อมูลเรียบร้อย</h2>
     <p class="desc">
       กำลังส่งคำขอให้แอดมินตรวจสอบ<br>
       คุณจะได้รับการแจ้งเตือนทาง LINE เมื่อมีผลการอนุมัติ
@@ -710,7 +710,7 @@ async function renderJobSelector(){
 
   list.innerHTML = html + `
     <div class="job-item job-item-manual" onclick="showManualCustomer(true)">
-      ✏️ ไม่มีในรายการ — กรอกเอง
+      ไม่มีในรายการ — กรอกเอง
     </div>`;
 
   $('manualCustomerWrap').style.display = 'none';
@@ -728,17 +728,17 @@ function selectJob(assignId){
   // build extra info rows
   const collectAmt = a.collectAmount ? Number(a.collectAmount) : 0;
   const collectRow = collectAmt
-    ? `<div class="jsb-collect">💰 ยอดเรียกเก็บปลายทาง: ${collectAmt.toLocaleString('th-TH')} บาท</div>` : '';
+    ? `<div class="jsb-collect">ยอดเรียกเก็บปลายทาง: ${collectAmt.toLocaleString('th-TH')} บาท</div>` : '';
   const mapsRow = a.googleMapsUrl
-    ? `<div class="jsb-maps">🗺 <a href="${encodeURI(a.googleMapsUrl)}" target="_blank">เปิดแผนที่</a></div>` : '';
+    ? `<div class="jsb-maps"><a href="${encodeURI(a.googleMapsUrl)}" target="_blank">เปิดแผนที่</a></div>` : '';
   const detailRow = a.deliveryDetail
-    ? `<div class="jsb-detail">📍 ${escape_(a.deliveryDetail)}</div>` : '';
+    ? `<div class="jsb-detail">${escape_(a.deliveryDetail)}</div>` : '';
 
   // แสดง banner "เลือกแล้ว" แทน list
   $('jobSelectorList').innerHTML = `
     <div class="job-selected-banner">
       <div style="flex:1;min-width:0;">
-        <div class="jsb-name">✅ ${escape_(fullName)}</div>
+        <div class="jsb-name">${escape_(fullName)}</div>
         <div class="jsb-sub">รับรถที่: ${escape_(a.pickupLocation||'-')}</div>
         ${collectRow}${mapsRow}${detailRow}
       </div>
@@ -753,7 +753,7 @@ function selectJob(assignId){
 
   state.currentAssignId = assignId;
   $('assignBanner').style.display = 'flex';
-  $('assignBanner').textContent = `📋 งาน: ${fullName}${collectAmt ? ' · ยอดเรียกเก็บ '+collectAmt.toLocaleString('th-TH')+' บาท' : ''}`;
+  $('assignBanner').textContent = `งาน: ${fullName}${collectAmt ? ' · ยอดเรียกเก็บ '+collectAmt.toLocaleString('th-TH')+' บาท' : ''}`;
 }
 
 function showManualCustomer(showBackBtn){
@@ -815,7 +815,7 @@ function continueDraft(tripId){
     $('jobSelectorList').innerHTML = `
       <div class="job-selected-banner">
         <div>
-          <div class="jsb-name">✅ ${escape_(d.customer)}</div>
+          <div class="jsb-name">${escape_(d.customer)}</div>
           <div class="jsb-sub">จากร่างที่บันทึกไว้</div>
         </div>
         <button class="btn-change-job" onclick="renderJobSelector()">เปลี่ยน</button>
