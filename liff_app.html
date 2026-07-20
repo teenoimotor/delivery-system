@@ -291,6 +291,7 @@
           <option value="สาขาติวานนท์">สาขาติวานนท์</option>
           <option value="สาขาบางบัวทอง">สาขาบางบัวทอง</option>
           <option value="มอเตอร์ไซค์ฝั่งธน">มอเตอร์ไซค์ฝั่งธน</option>
+          <option value="บ้าน/ที่ทำงานลูกค้า">บ้าน/ที่ทำงานลูกค้า</option>
           <option value="__other__">อื่น ๆ (ระบุเอง)</option>
         </select>
         <input type="text" id="stopBranchOther-0" class="other-input" placeholder="ระบุชื่อสถานที่..." style="display:none;" />
@@ -327,6 +328,7 @@
           <option value="สาขาติวานนท์">สาขาติวานนท์</option>
           <option value="สาขาบางบัวทอง">สาขาบางบัวทอง</option>
           <option value="มอเตอร์ไซค์ฝั่งธน">มอเตอร์ไซค์ฝั่งธน</option>
+          <option value="บ้าน/ที่ทำงานลูกค้า">บ้าน/ที่ทำงานลูกค้า</option>
           <option value="__other__">อื่น ๆ (ระบุเอง)</option>
         </select>
         <input type="text" id="stopBranchOther-1" class="other-input" placeholder="ระบุชื่อสถานที่..." style="display:none;" />
@@ -364,6 +366,7 @@
           <option value="สาขาติวานนท์">สาขาติวานนท์</option>
           <option value="สาขาบางบัวทอง">สาขาบางบัวทอง</option>
           <option value="มอเตอร์ไซค์ฝั่งธน">มอเตอร์ไซค์ฝั่งธน</option>
+          <option value="บ้าน/ที่ทำงานลูกค้า">บ้าน/ที่ทำงานลูกค้า</option>
           <option value="__other__">อื่น ๆ (ระบุเอง)</option>
         </select>
         <input type="text" id="stopBranchOther-2" class="other-input" placeholder="ระบุชื่อสถานที่..." style="display:none;" />
@@ -467,7 +470,7 @@ const APPS_SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbwKKb1MDHvEJU
 const RATE_PER_KM       = 1.5;   // ← ซ่อนจากพนักงาน ไม่แสดงใน UI
 const NUM_FIXED_STOPS   = 3;     // สถานที่ 1-3 บังคับ
 const MAX_STOPS         = 4;
-const BRANCH_PRESETS    = ['สาขาติวานนท์','สาขาบางบัวทอง','มอเตอร์ไซค์ฝั่งธน'];
+const BRANCH_PRESETS    = ['สาขาติวานนท์','สาขาบางบัวทอง','มอเตอร์ไซค์ฝั่งธน','บ้าน/ที่ทำงานลูกค้า'];
 
 /* ----- State ----- */
 const state = {
