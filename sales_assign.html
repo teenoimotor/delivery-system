@@ -527,7 +527,7 @@ async function loadHistory(){
     const url = `${APPS_SCRIPT_URL}?action=getAssignHistory&salesId=${encodeURIComponent(salesId)}&days=30`;
     const res = await fetch(url);
     const data = await res.json();
-    state.historyData = data.assignments||[];
+    state.historyData = data.items||[];
     renderHistory();
   }catch(e){
     $('historyList').innerHTML = '<div class="empty-state">โหลดประวัติไม่สำเร็จ</div>';
@@ -541,8 +541,8 @@ function renderHistory(){
   });
   if (!items.length){ $('historyList').innerHTML='<div class="empty-state">ยังไม่มีรายการ</div>'; return; }
   const html = items.map(h=>{
-    const sCls = h.status==='done'?'s-done':h.status==='inprogress'?'s-inprogress':'s-pending';
-    const sLabel = h.status==='done'?'เสร็จสิ้น':h.status==='inprogress'?'กำลังจัดส่ง':'รอจัดส่ง';
+    const sCls = h.status==='เสร็จสิ้น'?'s-done':h.status==='กำลังจัดส่ง'?'s-inprogress':'s-pending';
+    const sLabel = h.status==='เสร็จสิ้น'?'เสร็จสิ้น':h.status==='กำลังจัดส่ง'?'กำลังจัดส่ง':'รอจัดส่ง';
     const isPending = !h.status || h.status==='pending' || h.status==='รอจัดส่ง';
     const dueMs = h.deliveryDate ? new Date(`${String(h.deliveryDate).slice(0,10)}T${h.deliveryTime||'00:00'}`).getTime() : Infinity;
     const canEdit = isPending && (dueMs > Date.now());

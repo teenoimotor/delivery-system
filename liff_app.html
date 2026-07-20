@@ -668,7 +668,7 @@ async function fetchAssignments(){
     const url = `${APPS_SCRIPT_URL}?action=getPendingAssignments&driverId=${encodeURIComponent(userId)}`;
     const res = await fetch(url);
     const data = await res.json();
-    return (data.ok && data.assignments) ? data.assignments : [];
+    return (data.ok && data.items) ? data.items : [];
   }catch(e){ return []; }
 }
 
@@ -695,7 +695,7 @@ async function renderJobSelector(){
 
   // แสดงรายการงาน + ตัวเลือกกรอกเอง
   const html = items.map(a => {
-    const fullName = `${a.customerFirstName||''} ${a.customerLastName||''}`.trim();
+    const fullName = a.customerName || `${a.customerFirstName||''} ${a.customerLastName||''}`.trim();
     const dateStr  = a.deliveryDate ? String(a.deliveryDate).slice(0,10) : '';
     const timeStr  = a.deliveryTime ? String(a.deliveryTime).slice(0,5)  : '';
     return `
