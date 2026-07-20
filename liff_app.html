@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>บันทึกเที่ยววิ่ง</title>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  :root{
+    --green:#06C755;
+    --green-dark:#05a648;
+    --bg:#f5f7fb;
+    --card:#ffffff;
+    --text:#1f2937;
+    --muted:#6b7280;
+    --line:#e5e7eb;
+    --danger:#ef4444;
+    --ok:#10b981;
+    --warn:#f59e0b;
+    --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 12px rgba(0,0,0,.06);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:"Sarabun","Noto Sans Thai",-apple-system,BlinkMacSystemFont,sans-serif;font-size:15px;line-height:1.45;}
+  header{
+    background:var(--green);color:#fff;padding:14px 16px;
+    display:flex;align-items:center;justify-content:space-between;
+    position:sticky;top:0;z-index:10;box-shadow:0 2px 4px rgba(0,0,0,.08);
+  }
+  header h1{margin:0;font-size:17px;font-weight:600;}
+  header .user{font-size:12px;opacity:.9;}
+  header .uid{font-size:10px;opacity:.75;margin-top:2px;font-family:monospace;cursor:pointer;}
+  main{padding:14px;padding-bottom:96px;max-width:520px;margin:0 auto;}
+  .card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow);}
+  .card h2{margin:0 0 10px;font-size:14px;color:var(--green);display:flex;align-items:center;gap:6px;font-weight:600;}
+  .row{margin-bottom:12px;}
+  .row:last-child{margin-bottom:0;}
+  label{display:block;font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px;}
+  label .req{color:var(--danger);margin-left:2px;}
+  input[type=text],input[type=number],input[type=date],select,textarea{
+    width:100%;padding:11px 12px;border:1px solid var(--line);
+    border-radius:10px;font-size:15px;font-family:inherit;
+    background:#fff;color:var(--text);outline:none;transition:border-color .15s;
+  }
+  input:focus,select:focus,textarea:focus{border-color:var(--green);}
+  select{appearance:none;background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b7280' d='M6 8L0 0h12z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;}
+  .gps-row{display:flex;gap:8px;align-items:flex-end;}
+  .gps-row .gps-coords{flex:1;font-size:12px;color:var(--muted);background:#f3f4f6;padding:8px 10px;border-radius:8px;border:1px solid var(--line);min-height:36px;display:flex;align-items:center;}
+  .gps-row .gps-coords.has-value{color:var(--ok);font-weight:500;}
+  .btn-gps{background:#fff;color:var(--green);border:1px solid var(--green);padding:9px 14px;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;}
+  .btn-gps:active{background:#e6f7ee;}
+  .btn-gps.loading{opacity:.6;pointer-events:none;}
+  .photo-row{display:flex;gap:8px;align-items:center;}
+  .photo-thumb{width:64px;height:64px;border-radius:10px;border:1px dashed var(--line);background:#f9fafb;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);overflow:hidden;flex-shrink:0;}
+  .photo-thumb img{width:100%;height:100%;object-fit:cover;}
+  .photo-thumb.saved{background:#e6f7ee;color:var(--green);font-weight:600;border:1px solid var(--green);}
+  .btn-photo{flex:1;background:#fff;color:var(--green);border:1px solid var(--green);padding:11px 12px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;display:block;text-align:center;}
+  .btn-photo:active{background:#e6f7ee;}
+  input[type=file]{display:none;}
+  .footer-bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 14px;display:flex;gap:8px;z-index:20;padding-bottom:calc(10px + env(safe-area-inset-bottom));}
+  .btn-submit{flex:1;background:var(--green);color:#fff;border:none;padding:13px;border-radius:11px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;}
+  .btn-submit:active{background:var(--green-dark);}
+  .btn-submit:disabled{background:#9ca3af;cursor:not-allowed;}
+  .btn-draft{background:#fff;color:var(--warn);border:1px solid var(--warn);padding:13px 16px;border-radius:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;}
+  .btn-draft:active{background:#fef3c7;}
+  .btn-draft:disabled{opacity:.5;cursor:not-allowed;}
+  .hint{font-size:11px;color:var(--muted);margin-top:4px;}
+  .err{color:var(--danger);font-size:12px;margin-top:4px;display:none;}
+  .err.show{display:block;}
+  .badge{display:inline-block;background:#e6f7ee;color:var(--green);font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;}
+  .toast{position:fixed;left:50%;top:30%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:14px 18px;border-radius:12px;font-size:14px;z-index:100;display:none;max-width:80%;text-align:center;}
+  .toast.show{display:block;}
+  .spinner{width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .other-input{margin-top:8px;}
+  /* Pending Assignments */
+  .assign-card{background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%);border:1px solid #3b82f6;border-radius:14px;padding:14px;margin-bottom:12px;}
+  .assign-card h2{margin:0 0 10px;color:#1d4ed8;font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;}
+  .assign-item{background:#fff;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;border:1px solid #bfdbfe;}
+  .assign-item:last-child{margin-bottom:0;}
+  .assign-info{flex:1;min-width:0;}
+  .assign-info .adate{font-size:12px;color:#1d4ed8;font-weight:600;}
+  .assign-info .acust{font-size:13px;color:var(--text);font-weight:500;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .assign-info .aroute{font-size:11px;color:var(--muted);margin-top:2px;}
+  .btn-start-assign{background:#3b82f6;color:#fff;border:none;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;}
+  .assign-loading{font-size:12px;color:#1d4ed8;text-align:center;padding:8px;}
+  /* Draft list */
+  .draft-card{background:linear-gradient(135deg,#fef3c7 0%,#fde68a 100%);border:1px solid #f59e0b;border-radius:14px;padding:14px;margin-bottom:12px;}
+  .draft-card h2{margin:0 0 10px;color:#92400e;font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;}
+  .draft-loading{font-size:12px;color:#92400e;text-align:center;padding:8px;}
+  .draft-item{background:#fff;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;border:1px solid #fde68a;}
+  .draft-item:last-child{margin-bottom:0;}
+  .draft-info{flex:1;min-width:0;}
+  .draft-info .date{font-size:12px;color:#92400e;font-weight:600;}
+  .draft-info .cust{font-size:13px;color:var(--text);font-weight:500;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .draft-info .origin{font-size:11px;color:var(--muted);margin-top:2px;}
+  .btn-continue{background:var(--green);color:#fff;border:none;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;}
+  .btn-del-draft{background:transparent;color:var(--danger);border:none;padding:6px 8px;font-size:16px;cursor:pointer;flex-shrink:0;}
+  .btn-new-trip{width:100%;background:#fff;color:#92400e;border:1px dashed #f59e0b;padding:10px;border-radius:10px;font-size:13px;font-weight:600;margin-top:6px;cursor:pointer;font-family:inherit;}
+  .draft-mode-banner{background:#fef3c7;border:1px solid #f59e0b;color:#92400e;padding:8px 12px;border-radius:10px;font-size:12px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+  /* Locked field */
+  .locked input,.locked select{background:#f9fafb !important;color:var(--muted) !important;pointer-events:none;}
+  .locked .btn-gps,.locked .btn-photo{opacity:.5;pointer-events:none;}
+  .lock-badge{background:#e5e7eb;color:var(--muted);font-size:10px;padding:2px 6px;border-radius:6px;margin-left:6px;}
+  /* Stop card */
+  .stop-card{border-left:4px solid var(--green);}
+  .stop-card-optional{border-left:4px solid var(--muted);}
+  .btn-add-stop{width:100%;background:#fff;color:var(--green);border:2px dashed var(--green);padding:12px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:6px;}
+  .btn-add-stop:active{background:#e6f7ee;}
+  .btn-remove-stop{float:right;background:transparent;color:var(--danger);border:none;font-size:13px;cursor:pointer;padding:0;font-family:inherit;font-weight:500;}
+  /* History page */
+  .stats-card{background:linear-gradient(135deg,#06C755 0%,#05a648 100%);color:#fff;border-radius:14px;padding:16px;margin-bottom:12px;}
+  .stats-card h2{margin:0 0 12px;color:#fff;font-size:14px;font-weight:500;opacity:.95;}
+  .stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+  .stat-box{text-align:center;}
+  .stat-num{font-size:24px;font-weight:700;}
+  .stat-label{font-size:11px;opacity:.9;margin-top:2px;}
+  .trip-card{background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;box-shadow:var(--shadow);border-left:4px solid var(--muted);}
+  .trip-card.status-approved{border-left-color:var(--ok);}
+  .trip-card.status-pending{border-left-color:var(--warn);}
+  .trip-card.status-rejected{border-left-color:var(--danger);}
+  .trip-head{display:flex;justify-content:space-between;align-items:flex-start;font-size:12px;color:var(--muted);margin-bottom:6px;}
+  .trip-status{font-size:11px;padding:2px 8px;border-radius:8px;font-weight:600;}
+  .trip-status.s-approved{background:#d1fae5;color:#065f46;}
+  .trip-status.s-pending{background:#fef3c7;color:#92400e;}
+  .trip-status.s-rejected{background:#fee2e2;color:#991b1b;}
+  .trip-cust{font-size:14px;font-weight:600;margin-bottom:4px;}
+  .trip-route{font-size:13px;color:var(--text);margin-bottom:6px;}
+  .trip-foot{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);}
+  .empty-state{text-align:center;padding:40px 20px;color:var(--muted);}
+  .nav-btn{flex:1;background:#fff;border:1px solid var(--green);padding:13px;border-radius:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--green);}
+  .nav-btn:active{background:#e6f7ee;}
+  .filter-tabs{display:flex;gap:6px;margin-bottom:12px;background:#fff;padding:4px;border-radius:10px;box-shadow:var(--shadow);}
+  .filter-tabs button{flex:1;background:transparent;border:none;padding:8px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;color:var(--muted);font-family:inherit;}
+  .filter-tabs button.active{background:var(--green);color:#fff;}
+  .datetime-row{display:flex;gap:8px;}
+  .datetime-row .dt-col{flex:1;min-width:0;}
+  .datetime-row .dt-col.dt-date{flex:1.35;}
+  /* Submit Success Overlay */
+  .success-overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:200;padding:16px;}
+  .success-overlay.show{display:flex;}
+  .success-card{background:#fff;border-radius:18px;width:100%;max-width:440px;padding:24px 20px;box-shadow:0 12px 40px rgba(0,0,0,.18);max-height:90vh;overflow-y:auto;}
+  .success-status-bar{background:#fef3c7;border:1.5px solid #f59e0b;color:#92400e;padding:10px 14px;border-radius:12px;text-align:center;font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .success-status-dot{width:10px;height:10px;border-radius:50%;background:#f59e0b;animation:dotPulse 1.4s ease-in-out infinite;}
+  @keyframes dotPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(1.3);}}
+  .success-card h2{margin:0 0 8px;color:var(--green);font-size:18px;font-weight:700;text-align:center;}
+  .success-card .desc{color:var(--muted);font-size:13px;text-align:center;margin:0 0 16px;line-height:1.55;}
+  .success-summary{background:#f9fafb;border-radius:12px;padding:12px 14px;margin-bottom:16px;border:1px solid var(--line);}
+  .success-summary .srow{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:13px;}
+  .success-summary .srow + .srow{border-top:1px dashed var(--line);}
+  .success-summary .srow .lab{color:var(--muted);flex-shrink:0;}
+  .success-summary .srow .val{color:var(--text);font-weight:600;text-align:right;overflow-wrap:anywhere;}
+  .success-actions{display:flex;gap:8px;}
+  .success-actions button{flex:1;border:none;padding:12px;border-radius:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
+  .btn-success-close{background:#f3f4f6;color:var(--text);}
+  .btn-success-close:active{background:#e5e7eb;}
+  .btn-success-history{background:var(--green);color:#fff;}
+  .btn-success-history:active{background:var(--green-dark);}
+  /* Assignment banner */
+  .assign-banner{background:#eff6ff;border:1px solid #3b82f6;color:#1d4ed8;padding:8px 12px;border-radius:10px;font-size:12px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+  /* Job selector */
+  .job-selector-list{display:flex;flex-direction:column;gap:6px;}
+  .job-loading{font-size:12px;color:var(--muted);text-align:center;padding:10px;}
+  .job-item{background:#f9fafb;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .job-item:active,.job-item.selected{background:#e6f7ee;border-color:var(--green);}
+  .job-item-info{flex:1;min-width:0;}
+  .job-item-name{font-size:14px;font-weight:600;color:var(--text);}
+  .job-item-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+  .job-item-arrow{color:var(--green);font-size:16px;flex-shrink:0;}
+  .job-item-manual{background:#fff;border:1.5px dashed var(--muted);color:var(--muted);justify-content:center;font-size:13px;font-weight:500;}
+  .job-item-manual:active{background:#f3f4f6;border-color:var(--text);}
+  .job-selected-banner{background:#e6f7ee;border:1.5px solid var(--green);border-radius:10px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .job-selected-banner .jsb-name{font-size:14px;font-weight:600;color:var(--green);}
+  .job-selected-banner .jsb-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+  .jsb-collect{font-size:12px;color:#b45309;font-weight:600;margin-top:4px;}
+  .jsb-maps a{font-size:11px;color:#1d4ed8;text-decoration:none;margin-top:2px;display:inline-block;}
+  .jsb-detail{font-size:11px;color:var(--muted);margin-top:2px;}
+  .btn-change-job{background:transparent;color:var(--muted);border:1px solid var(--line);padding:5px 10px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;flex-shrink:0;}
+  .btn-back-jobs{display:block;margin-top:8px;background:transparent;color:var(--muted);border:none;font-size:12px;cursor:pointer;font-family:inherit;text-decoration:underline;padding:0;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1 id="pageTitle">บันทึกเที่ยววิ่ง</h1>
+    <div class="user" id="userName">กำลังโหลด...</div>
+    <div class="uid" id="userId" title="คลิกเพื่อคัดลอก userId"></div>
+  </div>
+  <span class="badge" id="badge">LIFF</span>
+</header>
+
+<!-- ========== HISTORY PAGE ========== -->
+<main id="historyPage" style="display:none;">
+  <div class="stats-card">
+    <h2>สรุปประวัติเที่ยววิ่ง <span id="statsDays">30 วัน</span>ล่าสุด</h2>
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-num" id="statTrips">0</div>
+        <div class="stat-label">เที่ยวอนุมัติแล้ว</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="statKm">0</div>
+        <div class="stat-label">กม. รวม</div>
+      </div>
+    </div>
+  </div>
+  <div class="filter-tabs">
+    <button data-filter="all" class="active">ทั้งหมด</button>
+    <button data-filter="approved">อนุมัติ</button>
+    <button data-filter="pending">รออนุมัติ</button>
+    <button data-filter="rejected">ไม่อนุมัติ</button>
+  </div>
+  <div id="historyList">
+    <div class="empty-state"><div>กำลังโหลดประวัติ...</div></div>
+  </div>
+</main>
+
+<!-- ========== FORM PAGE ========== -->
+<main id="formPage">
+
+  <!-- Pending assignments from sales -->
+  <div class="assign-card" id="assignCard" style="display:none;">
+    <h2>📋 งานที่ได้รับมอบหมาย</h2>
+    <div id="assignList"><div class="assign-loading">กำลังโหลด...</div></div>
+  </div>
+
+  <!-- Draft list -->
+  <div class="draft-card" id="draftCard" style="display:none;">
+    <h2>📝 ร่างที่บันทึกไว้</h2>
+    <div id="draftList"><div class="draft-loading">กำลังโหลด...</div></div>
+    <button class="btn-new-trip" id="btnNewTrip">+ เริ่มเที่ยวใหม่</button>
+  </div>
+
+  <!-- Assignment banner -->
+  <div class="assign-banner" id="assignBanner" style="display:none;">
+    📋 กำลังบันทึกงานที่ได้รับมอบหมาย
+  </div>
+
+  <!-- Draft banner -->
+  <div class="draft-mode-banner" id="draftBanner" style="display:none;">
+    กำลังกรอกข้อมูลต่อจากร่าง — สถานที่ 1 ถูกล็อก
+  </div>
+
+  <!-- 1. Trip Info -->
+  <div class="card" id="cardTrip">
+    <h2>① ข้อมูลเที่ยววิ่ง</h2>
+    <div class="row">
+      <div class="datetime-row">
+        <div class="dt-col dt-date">
+          <label>วันที่ <span class="req">*</span></label>
+          <input type="date" id="tripDate" required />
+        </div>
+        <div class="dt-col">
+          <label>เวลา <span class="req">*</span></label>
+          <input type="time" id="tripTime" required />
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <label>ชื่อลูกค้า / ผู้มอบหมายงาน <span class="req">*</span></label>
+
+      <!-- Job selector — โหลดจากตารางงานที่ได้รับมอบหมาย -->
+      <div id="jobSelectorWrap">
+        <div id="jobSelectorList" class="job-selector-list">
+          <div class="job-loading">กำลังโหลดตารางงาน...</div>
+        </div>
+        <!-- Manual input (แสดงเมื่อกด "กรอกเอง" หรือไม่มีงานในตาราง) -->
+        <div id="manualCustomerWrap" style="display:none;">
+          <input type="text" id="customer" placeholder="พิมพ์ชื่อลูกค้า / ผู้มอบหมายงาน" />
+          <button type="button" class="btn-back-jobs" id="btnBackJobs" style="display:none;">← กลับดูตารางงาน</button>
+        </div>
+      </div>
+      <!-- hidden field ที่ใช้ส่งค่า -->
+      <input type="hidden" id="customerValue" required />
+    </div>
+  </div>
+
+  <!-- Stop cards (2 rendered in HTML, 3rd+ added dynamically) -->
+  <div id="stopsContainer">
+
+    <!-- สถานที่ 1 -->
+    <div class="card stop-card" id="stopCard-0">
+      <h2>② สถานที่ 1
+        <span id="stopLock-0" class="lock-badge" style="display:none;">ล็อก</span>
+      </h2>
+      <div class="row">
+        <label>ชื่อสถานที่ <span class="req">*</span></label>
+        <select id="stopBranch-0" required>
+          <option value="">— เลือกสถานที่ —</option>
+          <option value="สาขาติวานนท์">สาขาติวานนท์</option>
+          <option value="สาขาบางบัวทอง">สาขาบางบัวทอง</option>
+          <option value="มอเตอร์ไซค์ฝั่งธน">มอเตอร์ไซค์ฝั่งธน</option>
+          <option value="__other__">อื่น ๆ (ระบุเอง)</option>
+        </select>
+        <input type="text" id="stopBranchOther-0" class="other-input" placeholder="ระบุชื่อสถานที่..." style="display:none;" />
+      </div>
+      <div class="row">
+        <label>พิกัด GPS <span class="req">*</span></label>
+        <div class="gps-row">
+          <div class="gps-coords" id="stopCoords-0">ยังไม่ได้ระบุพิกัด</div>
+          <button type="button" class="btn-gps" id="btnGps-0">ขอตำแหน่ง</button>
+        </div>
+        <div class="err" id="stopGpsErr-0">กรุณาอนุญาตการเข้าถึงตำแหน่ง</div>
+      </div>
+      <div class="row">
+        <label>เลขไมล์ (กม.) <span class="req">*</span></label>
+        <input type="number" id="stopMileage-0" inputmode="numeric" placeholder="เช่น 125400" required />
+      </div>
+      <div class="row">
+        <label>รูปเลขไมล์ <span class="req">*</span></label>
+        <div class="photo-row">
+          <div class="photo-thumb" id="stopPhotoThumb-0">รูป</div>
+          <label class="btn-photo" for="stopPhoto-0">ถ่ายรูปไมล์</label>
+          <input type="file" id="stopPhoto-0" accept="image/*" capture="environment" />
+        </div>
+      </div>
+    </div>
+
+    <!-- สถานที่ 2 -->
+    <div class="card stop-card" id="stopCard-1">
+      <h2>③ สถานที่ 2</h2>
+      <div class="row">
+        <label>ชื่อสถานที่ <span class="req">*</span></label>
+        <select id="stopBranch-1" required>
+          <option value="">— เลือกสถานที่ —</option>
+          <option value="สาขาติวานนท์">สาขาติวานนท์</option>
+          <option value="สาขาบางบัวทอง">สาขาบางบัวทอง</option>
+          <option value="มอเตอร์ไซค์ฝั่งธน">มอเตอร์ไซค์ฝั่งธน</option>
+          <option value="__other__">อื่น ๆ (ระบุเอง)</option>
+        </select>
+        <input type="text" id="stopBranchOther-1" class="other-input" placeholder="ระบุชื่อสถานที่..." style="display:none;" />
+      </div>
+      <div class="row">
+        <label>พิกัด GPS <span class="req">*</span></label>
+        <div class="gps-row">
+          <div class="gps-coords" id="stopCoords-1">ยังไม่ได้ระบุพิกัด</div>
+          <button type="button" class="btn-gps" id="btnGps-1">ขอตำแหน่ง</button>
+        </div>
+        <div class="err" id="stopGpsErr-1">กรุณาอนุญาตการเข้าถึงตำแหน่ง</div>
+      </div>
+      <div class="row">
+        <label>เลขไมล์ (กม.) <span class="req">*</span></label>
+        <input type="number" id="stopMileage-1" inputmode="numeric" placeholder="เช่น 125500" required />
+        <div class="err" id="stopMileageErr-1">เลขไมล์ต้องมากกว่าสถานที่ก่อนหน้า</div>
+      </div>
+      <div class="row">
+        <label>รูปเลขไมล์ <span class="req">*</span></label>
+        <div class="photo-row">
+          <div class="photo-thumb" id="stopPhotoThumb-1">รูป</div>
+          <label class="btn-photo" for="stopPhoto-1">ถ่ายรูปไมล์</label>
+          <input type="file" id="stopPhoto-1" accept="image/*" capture="environment" />
+        </div>
+      </div>
+    </div>
+
+    <!-- สถานที่ 3 -->
+    <div class="card stop-card" id="stopCard-2">
+      <h2>④ สถานที่ 3</h2>
+      <div class="row">
+        <label>ชื่อสถานที่ <span class="req">*</span></label>
+        <select id="stopBranch-2" required>
+          <option value="">— เลือกสถานที่ —</option>
+          <option value="สาขาติวานนท์">สาขาติวานนท์</option>
+          <option value="สาขาบางบัวทอง">สาขาบางบัวทอง</option>
+          <option value="มอเตอร์ไซค์ฝั่งธน">มอเตอร์ไซค์ฝั่งธน</option>
+          <option value="__other__">อื่น ๆ (ระบุเอง)</option>
+        </select>
+        <input type="text" id="stopBranchOther-2" class="other-input" placeholder="ระบุชื่อสถานที่..." style="display:none;" />
+      </div>
+      <div class="row">
+        <label>พิกัด GPS <span class="req">*</span></label>
+        <div class="gps-row">
+          <div class="gps-coords" id="stopCoords-2">ยังไม่ได้ระบุพิกัด</div>
+          <button type="button" class="btn-gps" id="btnGps-2">ขอตำแหน่ง</button>
+        </div>
+        <div class="err" id="stopGpsErr-2">กรุณาอนุญาตการเข้าถึงตำแหน่ง</div>
+      </div>
+      <div class="row">
+        <label>เลขไมล์ (กม.) <span class="req">*</span></label>
+        <input type="number" id="stopMileage-2" inputmode="numeric" placeholder="เช่น 125600" required />
+        <div class="err" id="stopMileageErr-2">เลขไมล์ต้องมากกว่าสถานที่ก่อนหน้า</div>
+      </div>
+      <div class="row">
+        <label>รูปเลขไมล์ <span class="req">*</span></label>
+        <div class="photo-row">
+          <div class="photo-thumb" id="stopPhotoThumb-2">รูป</div>
+          <label class="btn-photo" for="stopPhoto-2">ถ่ายรูปไมล์</label>
+          <input type="file" id="stopPhoto-2" accept="image/*" capture="environment" />
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /stopsContainer -->
+
+  <!-- Add stop button (max 4 stops total) -->
+  <button class="btn-add-stop" id="btnAddStop">+ เพิ่มสถานที่ 4</button>
+
+  <!-- Note -->
+  <div class="card">
+    <h2>⑤ หมายเหตุ (ไม่บังคับ)</h2>
+    <textarea id="note" rows="2" placeholder="เช่น แวะเติมน้ำมัน, รถติด ฯลฯ"></textarea>
+  </div>
+
+</main>
+
+<div class="footer-bar" id="footerForm">
+  <button class="btn-draft" id="btnDraft">บันทึกร่าง</button>
+  <button class="btn-submit" id="btnSubmit">ส่งเพื่ออนุมัติ</button>
+</div>
+
+<div class="footer-bar" id="footerHistory" style="display:none;">
+  <button class="nav-btn" id="btnReload">รีเฟรช</button>
+  <button class="btn-submit" id="btnNewFromHistory">บันทึกเที่ยวใหม่</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ========== SUBMIT SUCCESS OVERLAY ========== -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-card">
+    <div class="success-status-bar">
+      <span class="success-status-dot"></span>
+      <span>สถานะ: รออนุมัติ</span>
+    </div>
+    <h2>ส่งข้อมูลเรียบร้อย ✅</h2>
+    <p class="desc">
+      กำลังส่งคำขอให้แอดมินตรวจสอบ<br>
+      คุณจะได้รับการแจ้งเตือนทาง LINE เมื่อมีผลการอนุมัติ
+    </p>
+    <div class="success-summary" id="sucSummary"></div>
+    <div class="success-actions">
+      <button class="btn-success-close" id="btnSuccessClose">ปิด</button>
+      <button class="btn-success-history" id="btnSuccessHistory">ดูประวัติ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===========================================================
+   LIFF Form — บันทึกเที่ยววิ่ง v4
+   - 3 สถานที่ (required) + สถานที่ 4 (optional, กดเพิ่ม)
+   - ค่าคอมมิชชั่น 1.5 บาท/กม. (ไม่แสดงให้คนขับเห็น)
+   - รับงานจากพนักงานขายผ่าน LINE Push
+   =========================================================== */
+const LIFF_ID           = "2010158828-AOt8j0W9";
+const APPS_SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbwKKb1MDHvEJUEgjIPSVZwqJ3c4ITFOTwqkPEAoHhYRsBi6dNN2kcED2-O13nG0YqQo/exec";
+const RATE_PER_KM       = 1.5;   // ← ซ่อนจากพนักงาน ไม่แสดงใน UI
+const NUM_FIXED_STOPS   = 3;     // สถานที่ 1-3 บังคับ
+const MAX_STOPS         = 4;
+const BRANCH_PRESETS    = ['สาขาติวานนท์','สาขาบางบัวทอง','มอเตอร์ไซค์ฝั่งธน'];
+
+/* ----- State ----- */
+const state = {
+  liffReady: false,
+  profile: null,
+  numStops: 3,          // จำนวนสถานที่ปัจจุบัน (3 เริ่มต้น)
+  stops: [              // array สูงสุด 4 รายการ
+    {lat:null,lng:null,acc:null,photoB64:null,photoType:null,hasSavedPhoto:false},
+    {lat:null,lng:null,acc:null,photoB64:null,photoType:null,hasSavedPhoto:false},
+    {lat:null,lng:null,acc:null,photoB64:null,photoType:null,hasSavedPhoto:false},
+    {lat:null,lng:null,acc:null,photoB64:null,photoType:null,hasSavedPhoto:false},
+  ],
+  currentDraftId: null,
+  stop0Locked: false,   // ล็อกสถานที่ 1 เมื่อ continue draft
+  currentAssignId: null,
+};
+
+const $ = id => document.getElementById(id);
+const toast = (msg, ms=2400) => {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove('show'), ms);
+};
+
+/* ========== LIFF Init ========== */
+async function initLIFF(){
+  try{
+    if (typeof liff === 'undefined') throw new Error("LIFF SDK not loaded");
+    await liff.init({ liffId: LIFF_ID });
+    state.liffReady = true;
+    if (!liff.isLoggedIn()){ liff.login(); return; }
+    state.profile = await liff.getProfile();
+    $('userName').textContent = 'พนักงานขับรถ: ' + (state.profile.displayName || '-');
+    $('userId').textContent = 'ID: ' + state.profile.userId;
+  }catch(e){
+    $('userName').textContent = 'โหมดทดสอบ (ไม่ใน LINE)';
+    state.profile = { userId:'preview_'+Math.random().toString(36).slice(2,8), displayName:'ทดสอบ' };
+    $('userId').textContent = 'ID: ' + state.profile.userId;
+  }
+}
+
+function bindCopyUserId(){
+  $('userId').addEventListener('click', async ()=>{
+    const uid = state.profile?.userId || '';
+    if (!uid) return;
+    try{ await navigator.clipboard.writeText(uid); toast('คัดลอก userId แล้ว'); }
+    catch(e){
+      const ta = document.createElement('textarea');
+      ta.value = uid; document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); toast('คัดลอกแล้ว'); }catch(_){}
+      document.body.removeChild(ta);
+    }
+  });
+}
+
+/* ========== Date/Time ========== */
+function setToday(){
+  const d = new Date(), tz = d.getTimezoneOffset()*60000;
+  const local = new Date(d - tz).toISOString();
+  $('tripDate').value = local.slice(0,10);
+  $('tripTime').value = local.slice(11,16);
+}
+
+/* ========== GPS ========== */
+function getGPS(){
+  return new Promise((resolve,reject)=>{
+    if (!navigator.geolocation){ reject(new Error("ไม่รองรับ GPS")); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({ lat:pos.coords.latitude.toFixed(6), lng:pos.coords.longitude.toFixed(6), acc:Math.round(pos.coords.accuracy) }),
+      err => reject(err),
+      { enableHighAccuracy:true, timeout:15000, maximumAge:0 }
+    );
+  });
+}
+
+async function handleGps(idx){
+  const btn   = $(`btnGps-${idx}`);
+  const cell  = $(`stopCoords-${idx}`);
+  const errEl = $(`stopGpsErr-${idx}`);
+  errEl.classList.remove('show');
+  btn.classList.add('loading');
+  btn.innerHTML = '<span class="spinner"></span>กำลังหา...';
+  try{
+    const r = await getGPS();
+    state.stops[idx].lat = r.lat; state.stops[idx].lng = r.lng; state.stops[idx].acc = r.acc;
+    cell.textContent = `${r.lat}, ${r.lng}  (±${r.acc}m)`;
+    cell.classList.add('has-value');
+  }catch(e){
+    errEl.classList.add('show');
+    cell.textContent = 'ขอพิกัดไม่สำเร็จ';
+  }finally{
+    btn.classList.remove('loading');
+    btn.innerHTML = 'ขอตำแหน่ง';
+  }
+}
+
+/* ========== Photo ========== */
+function fileToB64(file){
+  return new Promise((res,rej)=>{
+    const r = new FileReader();
+    r.onload = ()=> res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+async function handlePhoto(idx){
+  const inp   = $(`stopPhoto-${idx}`);
+  const thumb = $(`stopPhotoThumb-${idx}`);
+  const file = inp.files[0]; if (!file) return;
+  state.stops[idx].photoType = file.type || 'image/jpeg';
+  const r = new FileReader();
+  r.onload = e => { thumb.classList.remove('saved'); thumb.innerHTML = `<img src="${e.target.result}" alt="" />`; };
+  r.readAsDataURL(file);
+  try{ state.stops[idx].photoB64 = await fileToB64(file); }catch(e){}
+}
+
+/* ========== Branch dropdown ========== */
+function toggleOther(idx){
+  const sel = $(`stopBranch-${idx}`);
+  const oth = $(`stopBranchOther-${idx}`);
+  if (!sel || !oth) return;
+  oth.style.display = sel.value === '__other__' ? 'block' : 'none';
+  if (sel.value !== '__other__') oth.value = '';
+}
+
+function getStopName(idx){
+  const sel = $(`stopBranch-${idx}`)?.value || '';
+  const oth = $(`stopBranchOther-${idx}`)?.value.trim() || '';
+  return sel === '__other__' ? oth : sel;
+}
+
+function setStopName(idx, value){
+  const sel = $(`stopBranch-${idx}`);
+  const oth = $(`stopBranchOther-${idx}`);
+  if (!sel || !oth) return;
+  if (BRANCH_PRESETS.includes(value)){
+    sel.value = value; oth.value = ''; oth.style.display = 'none';
+  } else if (value){
+    sel.value = '__other__'; oth.value = value; oth.style.display = 'block';
+  } else {
+    sel.value = ''; oth.value = ''; oth.style.display = 'none';
+  }
+}
+
+/* ========== Add Stop 4 ========== */
+function addStop4(){
+  const idx = 3;
+  const num = idx + 1;
+  const circled = ['①','②','③','④','⑤'][idx+1] || `${idx+1}`;
+
+  // Create card
+  const card = document.createElement('div');
+  card.className = 'card stop-card-optional';
+  card.id = `stopCard-${idx}`;
+  card.innerHTML = `
+    <h2>${circled} สถานที่ ${num}
+      <button class="btn-remove-stop" id="btnRemoveStop-${idx}">✕ ลบ</button>
+    </h2>
+    <div class="row">
+      <label>ชื่อสถานที่ <span class="req">*</span></label>
+      <select id="stopBranch-${idx}" required>
+        <option value="">— เลือกสถานที่ —</option>
+        <option value="สาขาติวานนท์">สาขาติวานนท์</option>
+        <option value="สาขาบางบัวทอง">สาขาบางบัวทอง</option>
+        <option value="มอเตอร์ไซค์ฝั่งธน">มอเตอร์ไซค์ฝั่งธน</option>
+        <option value="__other__">อื่น ๆ (ระบุเอง)</option>
+      </select>
+      <input type="text" id="stopBranchOther-${idx}" class="other-input" placeholder="ระบุชื่อสถานที่..." style="display:none;" />
+    </div>
+    <div class="row">
+      <label>พิกัด GPS <span class="req">*</span></label>
+      <div class="gps-row">
+        <div class="gps-coords" id="stopCoords-${idx}">ยังไม่ได้ระบุพิกัด</div>
+        <button type="button" class="btn-gps" id="btnGps-${idx}">ขอตำแหน่ง</button>
+      </div>
+      <div class="err" id="stopGpsErr-${idx}">กรุณาอนุญาตการเข้าถึงตำแหน่ง</div>
+    </div>
+    <div class="row">
+      <label>เลขไมล์ (กม.) <span class="req">*</span></label>
+      <input type="number" id="stopMileage-${idx}" inputmode="numeric" placeholder="เช่น 125700" required />
+      <div class="err" id="stopMileageErr-${idx}">เลขไมล์ต้องมากกว่าสถานที่ก่อนหน้า</div>
+    </div>
+    <div class="row">
+      <label>รูปเลขไมล์ <span class="req">*</span></label>
+      <div class="photo-row">
+        <div class="photo-thumb" id="stopPhotoThumb-${idx}">รูป</div>
+        <label class="btn-photo" for="stopPhoto-${idx}">ถ่ายรูปไมล์</label>
+        <input type="file" id="stopPhoto-${idx}" accept="image/*" capture="environment" />
+      </div>
+    </div>`;
+
+  $('stopsContainer').appendChild(card);
+
+  // Bind events for new card
+  $(`btnGps-${idx}`).addEventListener('click', ()=>handleGps(idx));
+  $(`stopPhoto-${idx}`).addEventListener('change', ()=>handlePhoto(idx));
+  $(`stopBranch-${idx}`).addEventListener('change', ()=>toggleOther(idx));
+  $(`btnRemoveStop-${idx}`).addEventListener('click', ()=>removeStop4());
+
+  state.numStops = 4;
+  $('btnAddStop').style.display = 'none';
+}
+
+function removeStop4(){
+  const card = $('stopCard-3');
+  if (card) card.remove();
+  state.numStops = 3;
+  state.stops[3] = {lat:null,lng:null,acc:null,photoB64:null,photoType:null,hasSavedPhoto:false};
+  $('btnAddStop').style.display = 'flex';
+}
+
+/* ========== Pending Assignments / Job Selector ========== */
+async function fetchAssignments(){
+  const userId = state.profile?.userId || '';
+  if (!userId) return [];
+  try{
+    const url = `${APPS_SCRIPT_URL}?action=getPendingAssignments&driverId=${encodeURIComponent(userId)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    return (data.ok && data.assignments) ? data.assignments : [];
+  }catch(e){ return []; }
+}
+
+/* renderAssignments — ซ่อน assignCard เดิม, ใช้ job selector แทน */
+async function renderAssignments(){
+  $('assignCard').style.display = 'none';  // ปิด card แยก
+  await renderJobSelector();
+}
+
+/* Job Selector ใน cardTrip */
+async function renderJobSelector(){
+  const list = $('jobSelectorList');
+  list.innerHTML = '<div class="job-loading">กำลังโหลดตารางงาน...</div>';
+
+  const items = await fetchAssignments();
+  state._assignsCache = items;
+
+  if (!items.length){
+    // ไม่มีงาน → แสดง manual input โดยตรง
+    list.innerHTML = '<div class="job-loading">ไม่มีตารางงานในขณะนี้</div>';
+    showManualCustomer(true);
+    return;
+  }
+
+  // แสดงรายการงาน + ตัวเลือกกรอกเอง
+  const html = items.map(a => {
+    const fullName = `${a.customerFirstName||''} ${a.customerLastName||''}`.trim();
+    const dateStr  = a.deliveryDate ? String(a.deliveryDate).slice(0,10) : '';
+    const timeStr  = a.deliveryTime ? String(a.deliveryTime).slice(0,5)  : '';
+    return `
+    <div class="job-item" data-id="${a.assignId}" onclick="selectJob('${a.assignId}')">
+      <div class="job-item-info">
+        <div class="job-item-name">${escape_(fullName)}</div>
+        <div class="job-item-sub">${dateStr}${timeStr?' '+timeStr:''} &nbsp;·&nbsp; ${escape_(a.pickupLocation||'-')} → ${escape_(a.deliveryLocation||'-')}</div>
+      </div>
+      <span class="job-item-arrow">›</span>
+    </div>`;
+  }).join('');
+
+  list.innerHTML = html + `
+    <div class="job-item job-item-manual" onclick="showManualCustomer(true)">
+      ✏️ ไม่มีในรายการ — กรอกเอง
+    </div>`;
+
+  $('manualCustomerWrap').style.display = 'none';
+}
+
+function selectJob(assignId){
+  const a = (state._assignsCache||[]).find(x=>x.assignId===assignId);
+  if (!a) return toast('ไม่พบงาน');
+
+  const fullName = a.customerName || `${a.customerFirstName||''} ${a.customerLastName||''}`.trim() || '';
+
+  // ตั้งค่า hidden field
+  $('customerValue').value = fullName;
+
+  // build extra info rows
+  const collectAmt = a.collectAmount ? Number(a.collectAmount) : 0;
+  const collectRow = collectAmt
+    ? `<div class="jsb-collect">💰 ยอดเรียกเก็บปลายทาง: ${collectAmt.toLocaleString('th-TH')} บาท</div>` : '';
+  const mapsRow = a.googleMapsUrl
+    ? `<div class="jsb-maps">🗺 <a href="${encodeURI(a.googleMapsUrl)}" target="_blank">เปิดแผนที่</a></div>` : '';
+  const detailRow = a.deliveryDetail
+    ? `<div class="jsb-detail">📍 ${escape_(a.deliveryDetail)}</div>` : '';
+
+  // แสดง banner "เลือกแล้ว" แทน list
+  $('jobSelectorList').innerHTML = `
+    <div class="job-selected-banner">
+      <div style="flex:1;min-width:0;">
+        <div class="jsb-name">✅ ${escape_(fullName)}</div>
+        <div class="jsb-sub">รับรถที่: ${escape_(a.pickupLocation||'-')}</div>
+        ${collectRow}${mapsRow}${detailRow}
+      </div>
+      <button class="btn-change-job" onclick="renderJobSelector()">เปลี่ยน</button>
+    </div>`;
+  $('manualCustomerWrap').style.display = 'none';
+
+  // ซิงค์ข้อมูลไปยังฟอร์ม
+  $('tripDate').value = a.deliveryDate ? String(a.deliveryDate).slice(0,10) : '';
+  $('tripTime').value = a.deliveryTime ? String(a.deliveryTime).slice(0,5)  : '';
+  setStopName(0, a.pickupLocation || '');
+
+  state.currentAssignId = assignId;
+  $('assignBanner').style.display = 'flex';
+  $('assignBanner').textContent = `📋 งาน: ${fullName}${collectAmt ? ' · ยอดเรียกเก็บ '+collectAmt.toLocaleString('th-TH')+' บาท' : ''}`;
+}
+
+function showManualCustomer(showBackBtn){
+  $('manualCustomerWrap').style.display = 'block';
+  if ($('btnBackJobs')) $('btnBackJobs').style.display = showBackBtn && state._assignsCache?.length ? 'block' : 'none';
+  // sync hidden field เมื่อพิมพ์
+  const inp = $('customer');
+  if (inp){
+    inp.oninput = ()=>{ $('customerValue').value = inp.value.trim(); };
+    inp.focus();
+  }
+}
+
+function startAssignment(assignId){ selectJob(assignId); }
+
+/* ========== Draft Management ========== */
+async function fetchDrafts(){
+  const userId = state.profile?.userId || '';
+  if (!userId) return [];
+  try{
+    const url = `${APPS_SCRIPT_URL}?action=getDrafts&userId=${encodeURIComponent(userId)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    return (data.ok && data.drafts) ? data.drafts : [];
+  }catch(e){ return []; }
+}
+
+async function renderDraftList(){
+  const drafts = await fetchDrafts();
+  if (!drafts.length){ $('draftCard').style.display = 'none'; return; }
+  $('draftCard').style.display = 'block';
+  const html = drafts.map(d => {
+    const dateStr = d.date ? String(d.date).slice(0,10) : '(ไม่ระบุวัน)';
+    const timeStr = d.time ? String(d.time).slice(0,5) : '';
+    return `
+    <div class="draft-item">
+      <div class="draft-info">
+        <div class="date">วันที่: ${dateStr}${timeStr?' '+timeStr:''}</div>
+        <div class="cust">ลูกค้า: ${escape_(d.customer||'(ไม่ระบุ)')}</div>
+        <div class="origin">สถานที่ 1: ${escape_(d.stop0Name||'(ยังไม่ระบุ)')}</div>
+      </div>
+      <button class="btn-continue" data-id="${d.tripId}" data-act="continue">ทำต่อ</button>
+      <button class="btn-del-draft" data-id="${d.tripId}" data-act="delete" title="ลบร่าง">ลบ</button>
+    </div>`;
+  }).join('');
+  $('draftList').innerHTML = html;
+  state._draftsCache = drafts;
+}
+
+function continueDraft(tripId){
+  const d = (state._draftsCache||[]).find(x=>x.tripId===tripId);
+  if (!d) return toast('ไม่พบร่าง');
+  $('tripDate').value = d.date ? String(d.date).slice(0,10) : '';
+  $('tripTime').value = d.time ? String(d.time).slice(0,5) : '';
+  if ($('customer')) $('customer').value = d.customer || '';
+  $('customerValue').value = d.customer || '';
+  // แสดงชื่อลูกค้าใน job selector
+  if (d.customer){
+    $('jobSelectorList').innerHTML = `
+      <div class="job-selected-banner">
+        <div>
+          <div class="jsb-name">✅ ${escape_(d.customer)}</div>
+          <div class="jsb-sub">จากร่างที่บันทึกไว้</div>
+        </div>
+        <button class="btn-change-job" onclick="renderJobSelector()">เปลี่ยน</button>
+      </div>`;
+    $('manualCustomerWrap').style.display = 'none';
+  }
+  setStopName(0, d.stop0Name||'');
+  $('stopMileage-0').value = d.stop0Mileage||'';
+  state.stops[0].lat = d.stop0Lat ? String(d.stop0Lat) : null;
+  state.stops[0].lng = d.stop0Lng ? String(d.stop0Lng) : null;
+  state.stops[0].hasSavedPhoto = !!d.stop0PhotoURL;
+  if (d.stop0Lat){
+    $('stopCoords-0').textContent = `${d.stop0Lat}, ${d.stop0Lng}`;
+    $('stopCoords-0').classList.add('has-value');
+  }
+  if (d.stop0PhotoURL){
+    $('stopPhotoThumb-0').classList.add('saved');
+    $('stopPhotoThumb-0').innerHTML = 'มีรูป';
+  }
+  if (d.note) $('note').value = d.note;
+  state.currentDraftId = tripId;
+  state.stop0Locked = true;
+  $('stopCard-0').classList.add('locked');
+  $(`stopLock-0`).style.display = 'inline-block';
+  $('draftCard').style.display = 'none';
+  $('draftBanner').style.display = 'flex';
+  setTimeout(()=>$('stopCard-1').scrollIntoView({behavior:'smooth',block:'start'}), 200);
+}
+
+async function deleteDraft(tripId){
+  if (!confirm('ต้องการลบร่างนี้?')) return;
+  try{
+    await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ action:'deleteDraft', tripId }) });
+    toast('ลบร่างแล้ว');
+    setTimeout(renderDraftList, 800);
+  }catch(e){ toast('ลบไม่สำเร็จ'); }
+}
+
+function newTrip(){
+  state.currentDraftId = null;
+  state.currentAssignId = null;
+  state.stop0Locked = false;
+  $('stopCard-0').classList.remove('locked');
+  $(`stopLock-0`).style.display = 'none';
+  $('draftBanner').style.display = 'none';
+  $('assignBanner').style.display = 'none';
+  $('draftCard').style.display = 'none';
+  resetForm();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function resetForm(){
+  setToday();
+  if ($('customer')) $('customer').value = '';
+  $('customerValue').value = '';
+  for (let i=0; i<3; i++){
+    setStopName(i, '');
+    $(`stopMileage-${i}`).value = '';
+    $(`stopPhotoThumb-${i}`).classList.remove('saved');
+    $(`stopPhotoThumb-${i}`).innerHTML = 'รูป';
+    $(`stopCoords-${i}`).textContent = 'ยังไม่ได้ระบุพิกัด';
+    $(`stopCoords-${i}`).classList.remove('has-value');
+    state.stops[i] = {lat:null,lng:null,acc:null,photoB64:null,photoType:null,hasSavedPhoto:false};
+  }
+  if (state.numStops === 4) removeStop4();
+  $('note').value = '';
+  renderJobSelector();
+}
+
+/* ========== Save Draft ========== */
+async function saveDraft(){
+  const date     = $('tripDate').value;
+  const time     = $('tripTime').value;
+  const customer = $('customerValue').value.trim() || $('customer')?.value.trim() || '';
+  const s0Name   = getStopName(0);
+  const s0Mile   = parseFloat($('stopMileage-0').value);
+  if (!date)    return toast('กรุณาเลือกวันที่');
+  if (!time)    return toast('กรุณาระบุเวลา');
+  if (!customer) return toast('กรุณาระบุชื่อลูกค้า/ผู้มอบหมายงาน');
+  if (!s0Name)  return toast('กรุณาเลือก/ระบุสถานที่ 1');
+  if (!state.stops[0].lat) return toast('กรุณาขอพิกัด GPS สถานที่ 1');
+  if (!s0Mile)  return toast('กรุณากรอกเลขไมล์ สถานที่ 1');
+  if (!state.stops[0].photoB64 && !state.stops[0].hasSavedPhoto) return toast('กรุณาถ่ายรูปไมล์ สถานที่ 1');
+
+  const btn = $('btnDraft');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>กำลังบันทึก...';
+  try{
+    const payload = {
+      action:'saveDraft',
+      draftTripId: state.currentDraftId || null,
+      driverId: state.profile?.userId||'unknown',
+      driverName: state.profile?.displayName||'unknown',
+      date, time, customer,
+      stop0Name: s0Name,
+      stop0Lat: state.stops[0].lat, stop0Lng: state.stops[0].lng, stop0Acc: state.stops[0].acc,
+      stop0Mileage: s0Mile,
+      stop0Photo: state.stops[0].photoB64,
+      stop0PhotoType: state.stops[0].photoType||'image/jpeg',
+      note: $('note').value.trim(),
+      savedAt: new Date().toISOString()
+    };
+    await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(payload) });
+    toast('บันทึกร่างเรียบร้อย');
+    setTimeout(()=>{
+      if (state.liffReady && liff.isInClient()) liff.closeWindow();
+      else { newTrip(); renderDraftList(); renderAssignments(); }
+    }, 1700);
+  }catch(e){ toast('บันทึกร่างไม่สำเร็จ'); }
+  finally{ btn.disabled=false; btn.innerHTML='บันทึกร่าง'; }
+}
+
+/* ========== Submit ========== */
+async function submit(){
+  const date     = $('tripDate').value;
+  const time     = $('tripTime').value;
+  const customer = $('customerValue').value.trim() || $('customer')?.value.trim() || '';
+  if (!date)    return toast('กรุณาเลือกวันที่');
+  if (!time)    return toast('กรุณาระบุเวลา');
+  if (!customer) return toast('กรุณาระบุชื่อลูกค้า/ผู้มอบหมายงาน');
+
+  // Validate all stops
+  const stopsData = [];
+  let prevMile = -Infinity;
+  for (let i=0; i<state.numStops; i++){
+    const name = getStopName(i);
+    const mile = parseFloat($(`stopMileage-${i}`)?.value||'0');
+    const s    = state.stops[i];
+    if (!name)    return toast(`กรุณาเลือก/ระบุชื่อ สถานที่ ${i+1}`);
+    if (!s.lat)   return toast(`กรุณาขอพิกัด GPS สถานที่ ${i+1}`);
+    if (!mile)    return toast(`กรุณากรอกเลขไมล์ สถานที่ ${i+1}`);
+    if (i>0 && mile <= prevMile) return toast(`เลขไมล์ สถานที่ ${i+1} ต้องมากกว่าสถานที่ก่อนหน้า`);
+    if (!s.photoB64 && !s.hasSavedPhoto) return toast(`กรุณาถ่ายรูปไมล์ สถานที่ ${i+1}`);
+    stopsData.push({ name, lat:s.lat, lng:s.lng, acc:s.acc, mileage:mile, photoB64:s.photoB64, photoType:s.photoType||'image/jpeg', hasSavedPhoto:s.hasSavedPhoto });
+    prevMile = mile;
+  }
+
+  const totalKm     = stopsData[stopsData.length-1].mileage - stopsData[0].mileage;
+  const commission  = totalKm * RATE_PER_KM;  // ไม่แสดงให้คนขับเห็น
+
+  const btn = $('btnSubmit');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>กำลังส่ง...';
+  try{
+    const payload = {
+      action:'submit',
+      draftTripId: state.currentDraftId||null,
+      assignId: state.currentAssignId||null,
+      driverId: state.profile?.userId||'unknown',
+      driverName: state.profile?.displayName||'unknown',
+      date, time, customer,
+      stops: stopsData.map(s=>({ name:s.name, lat:s.lat, lng:s.lng, acc:s.acc, mileage:s.mileage, photoType:s.photoType, hasSavedPhoto:s.hasSavedPhoto })),
+      stopsPhotos: stopsData.map(s=>s.photoB64),
+      totalDistance: totalKm,
+      rate: RATE_PER_KM,
+      commission: commission,
+      note: $('note').value.trim(),
+      submittedAt: new Date().toISOString()
+    };
+
+    await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(payload) });
+
+    // LINE sendMessages (ไม่แสดงค่าคอม)
+    if (state.liffReady && liff.isInClient()){
+      try{
+        const routeText = stopsData.map((s,i)=>`สถานที่ ${i+1}: ${s.name}`).join('\n');
+        await liff.sendMessages([{ type:'text',
+          text:`ส่งข้อมูลเพื่ออนุมัติเรียบร้อย\nวันที่: ${date} ${time}\nลูกค้า: ${customer}\n${routeText}\nระยะทางรวม: ${totalKm.toLocaleString()} กม.\nสถานะ: รออนุมัติ`
+        }]);
+      }catch(e){}
+    }
+
+    showSuccessOverlay({ date, time, customer, stopsData, totalKm });
+  }catch(e){ toast('ส่งข้อมูลไม่สำเร็จ ลองใหม่'); }
+  finally{ btn.disabled=false; btn.innerHTML='ส่งเพื่ออนุมัติ'; }
+}
+
+/* ========== Success Overlay ========== */
+function showSuccessOverlay(d){
+  const routeRows = d.stopsData.map((s,i)=>`
+    <div class="srow"><span class="lab">สถานที่ ${i+1}</span><span class="val">${escape_(s.name)}</span></div>`).join('');
+  $('sucSummary').innerHTML = `
+    <div class="srow"><span class="lab">วันที่</span><span class="val">${d.date||'-'}</span></div>
+    <div class="srow"><span class="lab">เวลา</span><span class="val">${d.time||'-'}</span></div>
+    <div class="srow"><span class="lab">ลูกค้า</span><span class="val">${escape_(d.customer||'-')}</span></div>
+    ${routeRows}
+    <div class="srow"><span class="lab">ระยะทางรวม</span><span class="val">${Number(d.totalKm||0).toLocaleString()} กม.</span></div>`;
+  $('successOverlay').classList.add('show');
+}
+
+function hideSuccessOverlay(){ $('successOverlay').classList.remove('show'); }
+
+/* ========== Event Binding ========== */
+function bind(){
+  // GPS + Photo for static stops 0-2
+  for (let i=0; i<NUM_FIXED_STOPS; i++){
+    $(`btnGps-${i}`).addEventListener('click', ()=>handleGps(i));
+    $(`stopPhoto-${i}`).addEventListener('change', ()=>handlePhoto(i));
+    $(`stopBranch-${i}`).addEventListener('change', ()=>toggleOther(i));
+  }
+  $('btnAddStop').addEventListener('click', addStop4);
+  $('btnSubmit').addEventListener('click', submit);
+  $('btnDraft').addEventListener('click', saveDraft);
+  $('btnNewTrip').addEventListener('click', newTrip);
+
+  // Success overlay
+  $('btnSuccessClose').addEventListener('click', ()=>{
+    hideSuccessOverlay();
+    if (state.liffReady && liff.isInClient()) liff.closeWindow();
+    else location.reload();
+  });
+  $('btnSuccessHistory').addEventListener('click', ()=>{
+    hideSuccessOverlay();
+    location.href = location.pathname + '?page=history';
+  });
+
+  // Draft list delegation
+  $('draftList').addEventListener('click', e=>{
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    const id = btn.dataset.id, act = btn.dataset.act;
+    if (act==='continue') continueDraft(id);
+    else if (act==='delete') deleteDraft(id);
+  });
+
+  // Assignment list delegation
+  $('assignList').addEventListener('click', e=>{
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    if (btn.dataset.act==='startAssign') startAssignment(btn.dataset.id);
+  });
+}
+
+/* ========== History Page ========== */
+const historyState = { filter:'all', data:[] };
+
+function getRequestedPage(){
+  const usp = new URLSearchParams(location.search);
+  if (usp.get('page')) return usp.get('page');
+  const liffState = usp.get('liff.state');
+  if (liffState){
+    const inner = new URLSearchParams(liffState.startsWith('?')?liffState.slice(1):liffState);
+    if (inner.get('page')) return inner.get('page');
+  }
+  return 'form';
+}
+
+async function loadHistory(){
+  const userId = state.profile?.userId||'';
+  if (!userId){ $('historyList').innerHTML='<div class="empty-state"><div>ไม่พบ userId</div></div>'; return; }
+  try{
+    const url = `${APPS_SCRIPT_URL}?action=getHistory&userId=${encodeURIComponent(userId)}&days=30`;
+    const res = await fetch(url);
+    const data = await res.json();
+    historyState.data = data.history||[];
+    $('statTrips').textContent = (data.totals?.trips||0).toLocaleString();
+    $('statKm').textContent    = (data.totals?.km||0).toLocaleString();
+    renderHistory();
+  }catch(e){ $('historyList').innerHTML='<div class="empty-state"><div>โหลดประวัติไม่สำเร็จ</div></div>'; }
+}
+
+function renderHistory(){
+  const items = historyState.data.filter(h=>{
+    if (historyState.filter==='all') return true;
+    if (historyState.filter==='approved') return h.status==='อนุมัติแล้ว';
+    if (historyState.filter==='pending')  return h.status==='รออนุมัติ';
+    if (historyState.filter==='rejected') return h.status==='ไม่อนุมัติ';
+    return true;
+  });
+  if (!items.length){ $('historyList').innerHTML='<div class="empty-state"><div>ยังไม่มีเที่ยววิ่งในช่วงนี้</div></div>'; return; }
+  const html = items.map(h=>{
+    const sCls = h.status==='อนุมัติแล้ว'?'approved':h.status==='รออนุมัติ'?'pending':h.status==='ไม่อนุมัติ'?'rejected':'';
+    const km   = Number(h.totalDistance||h.distance||0).toLocaleString();
+    const timeStr = h.time ? String(h.time).slice(0,5) : '';
+    const route = h.stops ? h.stops.map(s=>escape_(s.name)).join(' → ') : `${escape_(h.originName||'-')} → ${escape_(h.destName||'-')}`;
+    return `
+    <div class="trip-card status-${sCls}">
+      <div class="trip-head">
+        <span>วันที่: ${h.date||'-'}${timeStr?' '+timeStr:''}</span>
+        <span class="trip-status s-${sCls}">${h.status||'-'}</span>
+      </div>
+      <div class="trip-cust">ลูกค้า: ${escape_(h.customer)}</div>
+      <div class="trip-route">${route}</div>
+      <div class="trip-foot"><span>ระยะทาง: ${km} กม.</span></div>
+    </div>`;
+  }).join('');
+  $('historyList').innerHTML = html;
+}
+
+function escape_(s){ return String(s||'-').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function bindHistory(){
+  document.querySelectorAll('.filter-tabs button').forEach(b=>{
+    b.addEventListener('click',()=>{
+      document.querySelectorAll('.filter-tabs button').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      historyState.filter = b.dataset.filter;
+      renderHistory();
+    });
+  });
+  $('btnReload').addEventListener('click', loadHistory);
+  $('btnNewFromHistory').addEventListener('click', ()=>{ location.href = location.pathname; });
+}
+
+function showHistoryPage(){
+  $('formPage').style.display  = 'none';
+  $('footerForm').style.display= 'none';
+  $('historyPage').style.display  = 'block';
+  $('footerHistory').style.display= 'flex';
+  $('pageTitle').textContent = 'ประวัติเที่ยววิ่ง';
+  $('badge').textContent = 'HISTORY';
+}
+
+/* ========== Start ========== */
+(async function(){
+  const page = getRequestedPage();
+  setToday();
+  bind();
+  await initLIFF();
+  bindCopyUserId();
+  if (page==='history'){
+    showHistoryPage(); bindHistory(); loadHistory();
+  } else {
+    renderAssignments();
+    renderDraftList();
+  }
+})();
+</script>
+</body>
+</html>
