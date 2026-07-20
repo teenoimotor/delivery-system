@@ -267,7 +267,13 @@
         </div>
         <!-- Manual input (แสดงเมื่อกด "กรอกเอง" หรือไม่มีงานในตาราง) -->
         <div id="manualCustomerWrap" style="display:none;">
-          <input type="text" id="customer" placeholder="พิมพ์ชื่อลูกค้า / ผู้มอบหมายงาน" />
+          <select id="customerPreset" onchange="onCustomerPresetChange()">
+            <option value="">— เลือกหรือพิมพ์ —</option>
+            <option value="โยกรถ">โยกรถ</option>
+            <option value="รับรถ">รับรถ</option>
+            <option value="__other__">พิมพ์ข้อความอื่น ๆ</option>
+          </select>
+          <input type="text" id="customer" placeholder="พิมพ์ชื่อลูกค้า / ผู้มอบหมายงาน" style="display:none;margin-top:8px;" />
           <button type="button" class="btn-back-jobs" id="btnBackJobs" style="display:none;">← กลับดูตารางงาน</button>
         </div>
       </div>
@@ -783,9 +789,22 @@ function showManualCustomer(showBackBtn){
   if ($('btnBackJobs')) $('btnBackJobs').style.display = showBackBtn && state._assignsCache?.length ? 'block' : 'none';
   // sync hidden field เมื่อพิมพ์
   const inp = $('customer');
-  if (inp){
-    inp.oninput = ()=>{ $('customerValue').value = inp.value.trim(); };
+  if (inp) inp.oninput = ()=>{ $('customerValue').value = inp.value.trim(); };
+  $('customerPreset').onchange = onCustomerPresetChange;
+}
+
+function onCustomerPresetChange(){
+  const sel = $('customerPreset');
+  const inp = $('customer');
+  if (sel.value === '__other__'){
+    inp.style.display = 'block';
+    inp.value = '';
+    $('customerValue').value = '';
     inp.focus();
+  } else {
+    inp.style.display = 'none';
+    inp.value = '';
+    $('customerValue').value = sel.value;
   }
 }
 
@@ -830,8 +849,16 @@ function continueDraft(tripId){
   if (!d) return toast('ไม่พบร่าง');
   $('tripDate').value = d.date ? String(d.date).slice(0,10) : '';
   $('tripTime').value = d.time ? String(d.time).slice(0,5) : '';
-  if ($('customer')) $('customer').value = d.customer || '';
-  $('customerValue').value = d.customer || '';
+  const custPresets = ['โยกรถ','รับรถ'];
+  const custVal = d.customer || '';
+  if (custPresets.includes(custVal)){
+    $('customerPreset').value = custVal;
+    if ($('customer')) { $('customer').style.display='none'; $('customer').value=''; }
+  } else if (custVal) {
+    $('customerPreset').value = '__other__';
+    if ($('customer')) { $('customer').style.display='block'; $('customer').value=custVal; }
+  }
+  $('customerValue').value = custVal;
   // แสดงชื่อลูกค้าใน job selector
   if (d.customer){
     $('jobSelectorList').innerHTML = `
@@ -893,7 +920,8 @@ function newTrip(){
 
 function resetForm(){
   setToday();
-  if ($('customer')) $('customer').value = '';
+  if ($('customerPreset')) { $('customerPreset').value = ''; }
+  if ($('customer')) { $('customer').value = ''; $('customer').style.display = 'none'; }
   $('customerValue').value = '';
   for (let i=0; i<3; i++){
     setStopName(i, '');
