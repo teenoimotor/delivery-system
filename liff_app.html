@@ -1091,7 +1091,7 @@ async function loadHistory(){
   const userId = state.profile?.userId||'';
   if (!userId){ $('historyList').innerHTML='<div class="empty-state"><div>ไม่พบ userId</div></div>'; return; }
   try{
-    const url = `${APPS_SCRIPT_URL}?action=getHistory&userId=${encodeURIComponent(userId)}&days=30`;
+    const url = `${APPS_SCRIPT_URL}?action=getHistory&driverId=${encodeURIComponent(userId)}&days=30`;
     const res = await fetch(url);
     const data = await res.json();
     historyState.data = data.history||[];
