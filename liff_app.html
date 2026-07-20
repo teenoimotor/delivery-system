@@ -1220,17 +1220,30 @@ async function submitEvidence(){
 (async function(){
   const page     = getRequestedPage();
   const assignId = getUrlParam('assignId');
-  setToday();
-  bind();
-  await initLIFF();
-  bindCopyUserId();
+
   if (page === 'evidence'){
-    showEvidencePage(assignId);
-  } else if (page==='history'){
-    showHistoryPage(); bindHistory(); loadHistory();
+    // ซ่อนหน้าฟอร์มทันที ก่อน async ใดๆ
+    document.getElementById('formPage').style.display = 'none';
+    document.getElementById('footerForm').style.display = 'none';
+    document.getElementById('footerHistory').style.display = 'none';
+    $('evidencePage').style.display = 'block';
+    $('pageTitle').textContent = 'หลักฐานการจัดส่ง';
+    $('badge').textContent = '';
+    $('evAssignInfo').textContent = assignId ? 'งาน: ' + assignId : '';
+    state._evidenceAssignId = assignId;
+    await initLIFF();
+    bindCopyUserId();
   } else {
-    renderAssignments();
-    renderDraftList();
+    setToday();
+    bind();
+    await initLIFF();
+    bindCopyUserId();
+    if (page==='history'){
+      showHistoryPage(); bindHistory(); loadHistory();
+    } else {
+      renderAssignments();
+      renderDraftList();
+    }
   }
 })();
 </script>
