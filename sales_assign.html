@@ -127,6 +127,17 @@
   .edit-banner.show{display:block;}
   .maps-preview{margin-top:6px;font-size:12px;}
   .maps-preview a{color:var(--blue);text-decoration:none;}
+  /* Evidence image modal */
+  .ev-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;flex-direction:column;align-items:center;justify-content:flex-start;z-index:300;overflow-y:auto;}
+  .ev-modal-overlay.show{display:flex;}
+  .ev-modal-inner{width:100%;max-width:520px;}
+  .ev-modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;color:#fff;}
+  .ev-modal-title{font-size:16px;font-weight:700;}
+  .ev-modal-close{background:none;border:none;color:#fff;font-size:28px;cursor:pointer;padding:0;line-height:1;}
+  .ev-modal-img{width:100%;display:block;}
+  .ev-modal-footer{padding:12px 16px;}
+  .ev-dl-btn{display:block;width:100%;background:#fff;color:#1f2937;border:none;padding:13px;border-radius:11px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;text-align:center;text-decoration:none;box-sizing:border-box;}
+  .ev-hint{font-size:12px;color:rgba(255,255,255,.65);text-align:center;padding:4px 16px 20px;}
 </style>
 </head>
 <body>
@@ -274,6 +285,21 @@
 
 <div class="footer-bar" id="footerHistory" style="display:none;">
   <button class="nav-btn" id="btnReload">รีเฟรช</button>
+</div>
+
+<!-- Evidence Image Modal -->
+<div class="ev-modal-overlay" id="evModal" onclick="closeEvidenceModal(event)">
+  <div class="ev-modal-inner" onclick="event.stopPropagation()">
+    <div class="ev-modal-header">
+      <span class="ev-modal-title">หลักฐานการจัดส่ง</span>
+      <button class="ev-modal-close" onclick="closeEvidenceModal()">×</button>
+    </div>
+    <img id="evModalImg" class="ev-modal-img" src="" alt="หลักฐาน" />
+    <div class="ev-modal-footer">
+      <a id="evDlBtn" class="ev-dl-btn" href="" download="evidence.jpg" target="_blank">บันทึกรูป</a>
+    </div>
+    <div class="ev-hint">หรือกดค้างที่รูปเพื่อบันทึก</div>
+  </div>
 </div>
 
 <!-- Cancel Modal -->
@@ -587,6 +613,7 @@ function renderHistory(){
       <div class="hi-route">${escape_(h.pickupLocation||'-')} → ${escape_(h.deliveryLocation||'-')}</div>
       <div class="hi-driver">คนขับ: ${escape_(h.driverName||'-')}</div>
       ${cancelNote}
+      ${h.evidenceUrl ? `<div style="margin-top:6px;"><button onclick="showEvidenceModal('${h.evidenceUrl}')" style="background:#f0fdf4;border:1px solid #10b981;color:#065f46;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">หลักฐานการจัดส่ง</button></div>` : ''}
       ${actionBtns}
     </div>`;
   }).join('');
@@ -619,6 +646,16 @@ async function confirmCancelAssign(){
 }
 
 function escape_(s){ return String(s||'-').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ========== Evidence Modal ========== */
+function showEvidenceModal(url){
+  $('evModalImg').src = url;
+  $('evDlBtn').href = url;
+  $('evModal').classList.add('show');
+}
+function closeEvidenceModal(e){
+  if (!e || e.target === $('evModal')) $('evModal').classList.remove('show');
+}
 
 /* ========== Edit Assignment ========== */
 function loadAssignToForm(assignId){
