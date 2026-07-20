@@ -424,14 +424,14 @@
   </div>
   <div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:14px;">
     <label style="font-size:13px;font-weight:600;display:block;margin-bottom:10px;">รูปลูกค้ารับรถ <span style="color:#ef4444;">*</span></label>
-    <input type="file" id="evFileInput" accept="image/*" capture="environment" style="display:none;" onchange="onEvidenceFileSelected(this)" />
+    <input type="file" id="evFileInput" accept="image/*" style="display:none;" onchange="onEvidenceFileSelected(this)" />
     <div id="evPreview" style="width:100%;min-height:160px;border:2px dashed #e5e7eb;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:#f9fafb;overflow:hidden;" onclick="$('evFileInput').click()">
       <span id="evPreviewHint" style="color:#9ca3af;font-size:13px;">กดเพื่อถ่ายรูปหรือเลือกรูป</span>
       <img id="evPreviewImg" style="display:none;width:100%;height:auto;border-radius:8px;" />
     </div>
     <button onclick="$('evFileInput').click()" style="margin-top:10px;width:100%;background:#f3f4f6;border:none;padding:10px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">เปลี่ยนรูป</button>
   </div>
-  <button id="evSubmitBtn" onclick="submitEvidence()" style="width:100%;background:#3b82f6;color:#fff;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">อัปโหลดหลักฐาน</button>
+  <button id="evSubmitBtn" onclick="submitEvidence()" style="width:100%;background:#3b82f6;color:#fff;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">อัปโหลด</button>
   <div id="evResult" style="margin-top:12px;text-align:center;font-size:13px;display:none;"></div>
 </div>
 
@@ -1165,6 +1165,8 @@ function getUrlParam(key){
 function showEvidencePage(assignId){
   document.getElementById('formPage').style.display = 'none';
   $('evidencePage').style.display = 'block';
+  $('footerForm').style.display = 'none';
+  $('footerHistory').style.display = 'none';
   $('pageTitle').textContent = 'หลักฐานการจัดส่ง';
   $('badge').textContent = '';
   $('evAssignInfo').textContent = assignId ? 'งาน: ' + assignId : '';
@@ -1209,7 +1211,7 @@ async function submitEvidence(){
       throw new Error(data.error || 'Upload failed');
     }
   } catch(e) {
-    btn.disabled = false; btn.textContent = 'อัปโหลดหลักฐาน';
+    btn.disabled = false; btn.textContent = 'อัปโหลด';
     toast('อัปโหลดไม่สำเร็จ: ' + e.message, 4000);
   }
 }
