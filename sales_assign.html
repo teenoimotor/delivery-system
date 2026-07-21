@@ -367,9 +367,26 @@ async function initLIFF(){
     state.profile = await liff.getProfile();
     $('userName').textContent = 'พนักงานขาย: ' + (state.profile.displayName||'-');
   }catch(e){
-    $('userName').textContent = 'โหมดทดสอบ';
-    state.profile = { userId:'sales_preview_'+Math.random().toString(36).slice(2,8), displayName:'ทดสอบ(Sales)' };
+    // ไม่ได้เปิดผ่าน LINE → redirect ไป LIFF URL จริง
+    showLiffError();
   }
+}
+
+function showLiffError(){
+  document.body.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+      min-height:100vh;padding:32px;font-family:Sarabun,sans-serif;background:#f0f4ff;text-align:center;">
+      <div style="font-size:48px;margin-bottom:16px;">📱</div>
+      <div style="font-size:18px;font-weight:700;color:#1f2937;margin-bottom:8px;">กรุณาเปิดผ่าน LINE</div>
+      <div style="font-size:14px;color:#6b7280;margin-bottom:28px;line-height:1.6;">
+        ระบบนี้ต้องเปิดผ่านแอป LINE เท่านั้น<br>เพื่อยืนยันตัวตนของพนักงาน
+      </div>
+      <a href="https://liff.line.me/${LIFF_ID_SALES}"
+        style="background:#06c755;color:#fff;padding:14px 32px;border-radius:12px;
+          font-size:16px;font-weight:700;text-decoration:none;display:inline-block;">
+        เปิดใน LINE
+      </a>
+    </div>`;
 }
 
 /* ========== Date default ========== */

@@ -511,9 +511,21 @@ async function initLIFF(){
     $('userName').textContent = 'พนักงานขับรถ: ' + (state.profile.displayName || '-');
     $('userId').textContent = 'ID: ' + state.profile.userId;
   }catch(e){
-    $('userName').textContent = 'โหมดทดสอบ (ไม่ใน LINE)';
-    state.profile = { userId:'preview_'+Math.random().toString(36).slice(2,8), displayName:'ทดสอบ' };
-    $('userId').textContent = 'ID: ' + state.profile.userId;
+    // ไม่ได้เปิดผ่าน LINE → redirect ไป LIFF URL จริง
+    document.body.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+        min-height:100vh;padding:32px;font-family:Sarabun,sans-serif;background:#f0fff4;text-align:center;">
+        <div style="font-size:48px;margin-bottom:16px;">📱</div>
+        <div style="font-size:18px;font-weight:700;color:#1f2937;margin-bottom:8px;">กรุณาเปิดผ่าน LINE</div>
+        <div style="font-size:14px;color:#6b7280;margin-bottom:28px;line-height:1.6;">
+          ระบบนี้ต้องเปิดผ่านแอป LINE เท่านั้น<br>เพื่อยืนยันตัวตนของพนักงานขับรถ
+        </div>
+        <a href="https://liff.line.me/${LIFF_ID}"
+          style="background:#06c755;color:#fff;padding:14px 32px;border-radius:12px;
+            font-size:16px;font-weight:700;text-decoration:none;display:inline-block;">
+          เปิดใน LINE
+        </a>
+      </div>`;
   }
 }
 
