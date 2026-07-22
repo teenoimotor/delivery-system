@@ -427,9 +427,10 @@
 
 <!-- ========== EVIDENCE PAGE ========== -->
 <div id="evidencePage" style="display:none;padding:16px;max-width:480px;margin:0 auto;">
-  <div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:14px;">
-    <div style="font-size:15px;font-weight:700;margin-bottom:4px;">หลักฐานการจัดส่ง</div>
-    <div id="evAssignInfo" style="font-size:13px;color:#6b7280;"></div>
+  <div style="background:#10b981;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:14px;">
+    <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:4px;">หลักฐานการจัดส่ง</div>
+    <div id="evAssignInfo" style="font-size:13px;color:rgba(255,255,255,.85);"></div>
+    <div style="font-size:12px;color:rgba(255,255,255,.75);margin-top:4px;">กรุณาถ่ายรูปลูกค้ารับรถแล้วกดอัปโหลด เพื่อยืนยันการจัดส่งสำเร็จ</div>
   </div>
   <div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:14px;">
     <label style="font-size:13px;font-weight:600;display:block;margin-bottom:10px;">รูปลูกค้ารับรถ <span style="color:#ef4444;">*</span></label>
@@ -827,10 +828,10 @@ async function fetchDrafts(){
   const userId = state.profile?.userId || '';
   if (!userId) return [];
   try{
-    const url = `${APPS_SCRIPT_URL}?action=getDrafts&userId=${encodeURIComponent(userId)}`;
+    const url = `${APPS_SCRIPT_URL}?action=getDrafts&driverId=${encodeURIComponent(userId)}`;
     const res = await fetch(url);
     const data = await res.json();
-    return (data.ok && data.drafts) ? data.drafts : [];
+    return (data.ok && (data.items || data.drafts)) ? (data.items || data.drafts) : [];
   }catch(e){ return []; }
 }
 
@@ -1246,10 +1247,17 @@ async function submitEvidence(){
     const res  = await fetch(APPS_SCRIPT_URL, { method:'POST', body });
     const data = await res.json();
     if (data.ok){
-      $('evResult').style.display = 'block';
-      $('evResult').style.color   = '#10b981';
-      $('evResult').textContent   = 'อัปโหลดสำเร็จ';
-      btn.textContent = 'อัปโหลดแล้ว';
+      // แสดง success แล้วปิด LIFF
+      $('evidencePage').innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+          min-height:60vh;padding:32px;text-align:center;">
+          <div style="font-size:56px;margin-bottom:16px;">✅</div>
+          <div style="font-size:18px;font-weight:700;color:#065f46;margin-bottom:8px;">จัดส่งสำเร็จ</div>
+          <div style="font-size:14px;color:#6b7280;margin-bottom:24px;">อัปโหลดหลักฐานเรียบร้อย<br>ระบบได้อัปเดตสถานะและแจ้งกลุ่มแล้ว</div>
+          <button onclick="if(liff&&liff.isInClient())liff.closeWindow();else window.close();"
+            style="background:#10b981;color:#fff;border:none;padding:13px 32px;border-radius:12px;
+              font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">ปิดหน้าต่าง</button>
+        </div>`;
     } else {
       throw new Error(data.error || 'Upload failed');
     }
