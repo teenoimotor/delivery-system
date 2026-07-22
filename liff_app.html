@@ -889,7 +889,7 @@ function continueDraft(tripId){
   state.stops[0].lat          = d.stop0Lat  ? String(d.stop0Lat)  : null;
   state.stops[0].lng          = d.stop0Lng  ? String(d.stop0Lng)  : null;
   state.stops[0].acc          = d.stop0Acc  || null;
-  state.stops[0].photoB64     = d.stop0Photo     || null;
+  state.stops[0].photoB64     = (d.stop0Photo && d.stop0Photo !== '1') ? d.stop0Photo : null;
   state.stops[0].photoType    = d.stop0PhotoType || 'image/jpeg';
   state.stops[0].hasSavedPhoto = !!(d.stop0Photo || d.stop0PhotoURL);
   if (d.stop0Lat){
@@ -980,7 +980,7 @@ async function saveDraft(){
       stop0Name: s0Name,
       stop0Lat: state.stops[0].lat, stop0Lng: state.stops[0].lng, stop0Acc: state.stops[0].acc,
       stop0Mileage: s0Mile,
-      stop0Photo: state.stops[0].photoB64,
+      stop0Photo: (state.stops[0].photoB64 || state.stops[0].hasSavedPhoto) ? '1' : '',
       stop0PhotoType: state.stops[0].photoType||'image/jpeg',
       note: $('note').value.trim(),
       savedAt: new Date().toISOString()
