@@ -886,14 +886,17 @@ function continueDraft(tripId){
   }
   setStopName(0, d.stop0Name||'');
   $('stopMileage-0').value = d.stop0Mileage||'';
-  state.stops[0].lat = d.stop0Lat ? String(d.stop0Lat) : null;
-  state.stops[0].lng = d.stop0Lng ? String(d.stop0Lng) : null;
-  state.stops[0].hasSavedPhoto = !!d.stop0PhotoURL;
+  state.stops[0].lat          = d.stop0Lat  ? String(d.stop0Lat)  : null;
+  state.stops[0].lng          = d.stop0Lng  ? String(d.stop0Lng)  : null;
+  state.stops[0].acc          = d.stop0Acc  || null;
+  state.stops[0].photoB64     = d.stop0Photo     || null;
+  state.stops[0].photoType    = d.stop0PhotoType || 'image/jpeg';
+  state.stops[0].hasSavedPhoto = !!(d.stop0Photo || d.stop0PhotoURL);
   if (d.stop0Lat){
     $('stopCoords-0').textContent = `${d.stop0Lat}, ${d.stop0Lng}`;
     $('stopCoords-0').classList.add('has-value');
   }
-  if (d.stop0PhotoURL){
+  if (d.stop0Photo || d.stop0PhotoURL){
     $('stopPhotoThumb-0').classList.add('saved');
     $('stopPhotoThumb-0').innerHTML = 'มีรูป';
   }
