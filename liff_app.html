@@ -564,7 +564,61 @@ function getGPS(){
   });
 }
 
+function saveFormBackup(){
+  try{
+    const stops = state.stops.map((s,i)=>({
+      ...s, photoB64: null,  // ไม่เก็บ base64 (ใหญ่เกิน)
+      name: getStopName(i),
+      mileage: $(`stopMileage-${i}`)?.value||''
+    }));
+    localStorage.setItem('_liff_backup', JSON.stringify({
+      date: $('tripDate').value, time: $('tripTime').value,
+      customer: $('customerValue').value,
+      numStops: state.numStops,
+      currentDraftId: state.currentDraftId,
+      stop0Locked: state.stop0Locked,
+      stops, note: $('note').value,
+      ts: Date.now()
+    }));
+  }catch(e){}
+}
+
+function restoreFormBackup(){
+  try{
+    const raw = localStorage.getItem('_liff_backup');
+    if (!raw) return;
+    const b = JSON.parse(raw);
+    if (!b || !b.ts || Date.now() - b.ts > 10*60*1000) { localStorage.removeItem('_liff_backup'); return; }
+    // ต้องมีข้อมูลสำคัญอย่างน้อย 1 อย่าง
+    if (!b.date && !b.customer) return;
+    if (confirm('พบข้อมูลที่กรอกค้างไว้ ต้องการกู้คืนไหม?')){
+      $('tripDate').value = b.date||''; $('tripTime').value = b.time||'';
+      $('customerValue').value = b.customer||'';
+      if ($('customer')) $('customer').value = b.customer||'';
+      if ($('note')) $('note').value = b.note||'';
+      state.currentDraftId = b.currentDraftId||null;
+      state.stop0Locked    = b.stop0Locked||false;
+      state.numStops       = b.numStops||3;
+      (b.stops||[]).forEach((s,i)=>{
+        if (i>=4) return;
+        state.stops[i].lat  = s.lat||null;
+        state.stops[i].lng  = s.lng||null;
+        state.stops[i].acc  = s.acc||null;
+        state.stops[i].hasSavedPhoto = s.hasSavedPhoto||false;
+        if (s.name) setStopName(i, s.name);
+        if (s.mileage && $(`stopMileage-${i}`)) $(`stopMileage-${i}`).value = s.mileage;
+        if (s.lat){ $(`stopCoords-${i}`).textContent=`${s.lat}, ${s.lng}`; $(`stopCoords-${i}`).classList.add('has-value'); }
+        if (s.hasSavedPhoto){ $(`stopPhotoThumb-${i}`).classList.add('saved'); $(`stopPhotoThumb-${i}`).innerHTML='มีรูป'; }
+      });
+      if (b.stop0Locked){ $('stopCard-0').classList.add('locked'); $('stopLock-0').style.display='inline-block'; }
+      toast('กู้คืนข้อมูลเรียบร้อย');
+    }
+    localStorage.removeItem('_liff_backup');
+  }catch(e){}
+}
+
 async function handleGps(idx){
+  saveFormBackup();   // backup ก่อนขอ GPS เผื่อหน้า reload
   const btn   = $(`btnGps-${idx}`);
   const cell  = $(`stopCoords-${idx}`);
   const errEl = $(`stopGpsErr-${idx}`);
@@ -884,6 +938,7 @@ function continueDraft(tripId){
       </div>`;
     $('manualCustomerWrap').style.display = 'none';
   }
+  // Restore stop 0 (locked)
   setStopName(0, d.stop0Name||'');
   $('stopMileage-0').value = d.stop0Mileage||'';
   state.stops[0].lat          = d.stop0Lat  ? String(d.stop0Lat)  : null;
@@ -900,6 +955,32 @@ function continueDraft(tripId){
     $('stopPhotoThumb-0').classList.add('saved');
     $('stopPhotoThumb-0').innerHTML = 'มีรูป';
   }
+
+  // Restore stops 1-2
+  for (let i=1; i<=2; i++){
+    const sName  = d[`stop${i}Name`]  || '';
+    const sLat   = d[`stop${i}Lat`]   || '';
+    const sLng   = d[`stop${i}Lng`]   || '';
+    const sAcc   = d[`stop${i}Acc`]   || null;
+    const sMile  = d[`stop${i}Mileage`] || '';
+    const sPhoto = d[`stop${i}Photo`]  || '';
+    if (sName) setStopName(i, sName);
+    if (sMile && $(`stopMileage-${i}`)) $(`stopMileage-${i}`).value = sMile;
+    state.stops[i].lat  = sLat ? String(sLat) : null;
+    state.stops[i].lng  = sLng ? String(sLng) : null;
+    state.stops[i].acc  = sAcc;
+    state.stops[i].hasSavedPhoto = !!sPhoto;
+    state.stops[i].photoB64      = (sPhoto && sPhoto !== '1') ? sPhoto : null;
+    if (sLat){
+      $(`stopCoords-${i}`).textContent = `${sLat}, ${sLng}`;
+      $(`stopCoords-${i}`).classList.add('has-value');
+    }
+    if (sPhoto){
+      $(`stopPhotoThumb-${i}`).classList.add('saved');
+      $(`stopPhotoThumb-${i}`).innerHTML = 'มีรูป';
+    }
+  }
+
   if (d.note) $('note').value = d.note;
   state.currentDraftId = tripId;
   state.stop0Locked = true;
@@ -982,6 +1063,16 @@ async function saveDraft(){
       stop0Mileage: s0Mile,
       stop0Photo: (state.stops[0].photoB64 || state.stops[0].hasSavedPhoto) ? '1' : '',
       stop0PhotoType: state.stops[0].photoType||'image/jpeg',
+      stop1Name: getStopName(1),
+      stop1Lat: state.stops[1].lat, stop1Lng: state.stops[1].lng, stop1Acc: state.stops[1].acc,
+      stop1Mileage: parseFloat($('stopMileage-1')?.value)||'',
+      stop1Photo: (state.stops[1].photoB64 || state.stops[1].hasSavedPhoto) ? '1' : '',
+      stop1PhotoType: state.stops[1].photoType||'image/jpeg',
+      stop2Name: getStopName(2),
+      stop2Lat: state.stops[2].lat, stop2Lng: state.stops[2].lng, stop2Acc: state.stops[2].acc,
+      stop2Mileage: parseFloat($('stopMileage-2')?.value)||'',
+      stop2Photo: (state.stops[2].photoB64 || state.stops[2].hasSavedPhoto) ? '1' : '',
+      stop2PhotoType: state.stops[2].photoType||'image/jpeg',
       note: $('note').value.trim(),
       savedAt: new Date().toISOString()
     };
@@ -1295,6 +1386,7 @@ async function submitEvidence(){
     if (page==='history'){
       showHistoryPage(); bindHistory(); loadHistory();
     } else {
+      restoreFormBackup();   // กู้คืนข้อมูลถ้าหน้า reload กลางทาง
       renderAssignments();
       renderDraftList();
     }
