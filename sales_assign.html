@@ -366,24 +366,15 @@ async function initLIFF(){
     if (!liff.isLoggedIn()){ liff.login(); return; }
     state.profile = await liff.getProfile();
     $('userName').textContent = 'พนักงานขาย: ' + (state.profile.displayName||'-');
-    // ดัก groupId จาก LIFF context
+    // ดัก groupId จาก LIFF context เมื่อเปิดจากกลุ่ม LINE
     try{
       const ctx = liff.getContext();
-      const el = document.createElement('div');
-      el.style.cssText = 'position:fixed;bottom:70px;left:0;right:0;background:#1d4ed8;color:#fff;padding:8px 12px;font-size:11px;z-index:999;word-break:break-all;';
-      el.innerHTML = 'context: ' + JSON.stringify(ctx);
-      document.body.appendChild(el);
       if (ctx && ctx.groupId){
         fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors',
           headers:{'Content-Type':'text/plain;charset=utf-8'},
           body: JSON.stringify({ action:'setGroupId', groupId: ctx.groupId }) });
       }
-    }catch(e){
-      const el = document.createElement('div');
-      el.style.cssText = 'position:fixed;bottom:70px;left:0;right:0;background:#ef4444;color:#fff;padding:8px 12px;font-size:11px;z-index:999;';
-      el.textContent = 'context error: ' + e.message;
-      document.body.appendChild(el);
-    }
+    }catch(_){}
   }catch(e){
     // ไม่ได้เปิดผ่าน LINE → redirect ไป LIFF URL จริง
     showLiffError();
