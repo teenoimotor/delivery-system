@@ -600,20 +600,12 @@ async function submitAssign(){
       assignedAt: new Date().toISOString()
     };
 
-    const bodyStr = JSON.stringify(payload);
-    let sent = false;
-    // Try 1: POST no-cors without explicit headers (more compatible with LINE WebView)
-    try{
-      await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: bodyStr });
-      sent = true;
-    }catch(e1){
-      // Try 2: GET with data in query param (avoids CORS preflight entirely)
-      try{
-        const q = new URLSearchParams({ data: bodyStr });
-        await fetch(APPS_SCRIPT_URL + '?' + q.toString(), { mode:'no-cors' });
-        sent = true;
-      }catch(e2){ throw e2; }
-    }
+    // ใช้ GET + individual params เสมอ
+    // เหตุผล: GAS POST ทุกครั้งจะ redirect 302 → body หาย → doPost ไม่ได้รับข้อมูล
+    // GET ไม่มี 302 issue และ doGet รับ e.parameter ตรงๆ ได้เลย
+    const q = new URLSearchParams();
+    Object.entries(payload).forEach(([k, v]) => q.set(k, v == null ? '' : String(v)));
+    await fetch(APPS_SCRIPT_URL + '?' + q.toString(), { mode: 'no-cors' });
 
     // LINE message to sales (confirmation)
     if (state.liffReady && liff.isInClient()){
