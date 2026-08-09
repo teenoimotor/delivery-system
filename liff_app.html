@@ -173,8 +173,10 @@
   .job-selected-banner .jsb-name{font-size:14px;font-weight:600;color:var(--green);}
   .job-selected-banner .jsb-sub{font-size:11px;color:var(--muted);margin-top:2px;}
   .jsb-collect{font-size:12px;color:#b45309;font-weight:600;margin-top:4px;}
-  .jsb-maps a{font-size:11px;color:#1d4ed8;text-decoration:none;margin-top:2px;display:inline-block;}
+  .jsb-maps a{font-size:12px;color:#1d4ed8;text-decoration:none;margin-top:4px;display:inline-block;}
   .jsb-detail{font-size:11px;color:var(--muted);margin-top:2px;}
+  .jsb-detail-addr{font-size:12px;color:#374151;margin-top:4px;line-height:1.4;}
+  .jsb-phone a{font-size:13px;color:#2563eb;text-decoration:none;font-weight:600;margin-top:3px;display:inline-block;}
   .btn-change-job{background:transparent;color:var(--muted);border:1px solid var(--line);padding:5px 10px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;flex-shrink:0;}
   .btn-back-jobs{display:block;margin-top:8px;background:transparent;color:var(--muted);border:none;font-size:12px;cursor:pointer;font-family:inherit;text-decoration:underline;padding:0;}
 </style>
@@ -834,21 +836,25 @@ function selectJob(assignId){
   $('customerValue').value = fullName;
 
   // build extra info rows
-  const collectAmt = a.collectAmount ? Number(a.collectAmount) : 0;
-  const collectRow = collectAmt
+  const collectAmt  = a.collectAmount ? Number(a.collectAmount) : 0;
+  const phoneRow    = a.customerPhone
+    ? `<div class="jsb-phone"><a href="tel:${encodeURIComponent(a.customerPhone)}">📞 ${escape_(a.customerPhone)}</a></div>` : '';
+  const collectRow  = collectAmt
     ? `<div class="jsb-collect">ยอดเรียกเก็บปลายทาง: ${collectAmt.toLocaleString('th-TH')} บาท</div>` : '';
-  const mapsRow = a.googleMapsUrl
-    ? `<div class="jsb-maps"><a href="${encodeURI(a.googleMapsUrl)}" target="_blank">เปิดแผนที่</a></div>` : '';
-  const detailRow = a.deliveryDetail
-    ? `<div class="jsb-detail">${escape_(a.deliveryDetail)}</div>` : '';
+  const detailRow   = a.deliveryDetail
+    ? `<div class="jsb-detail-addr">📍 ${escape_(a.deliveryDetail)}</div>` : '';
+  const mapsRow     = a.googleMapsUrl
+    ? `<div class="jsb-maps"><a href="${encodeURI(a.googleMapsUrl)}" target="_blank">🗺️ เปิดแผนที่</a></div>` : '';
 
   // แสดง banner "เลือกแล้ว" แทน list
   $('jobSelectorList').innerHTML = `
     <div class="job-selected-banner">
       <div style="flex:1;min-width:0;">
         <div class="jsb-name">${escape_(fullName)}</div>
-        <div class="jsb-sub">รับรถที่: ${escape_(a.pickupLocation||'-')}</div>
-        ${collectRow}${mapsRow}${detailRow}
+        ${phoneRow}
+        <div class="jsb-sub">🏢 รับรถที่: ${escape_(a.pickupLocation||'-')}</div>
+        ${detailRow}
+        ${collectRow}${mapsRow}
       </div>
       <button class="btn-change-job" onclick="renderJobSelector()">เปลี่ยน</button>
     </div>`;
@@ -861,7 +867,7 @@ function selectJob(assignId){
 
   state.currentAssignId = assignId;
   $('assignBanner').style.display = 'flex';
-  $('assignBanner').textContent = `งาน: ${fullName}${collectAmt ? ' · ยอดเรียกเก็บ '+collectAmt.toLocaleString('th-TH')+' บาท' : ''}`;
+  $('assignBanner').textContent = `งาน: ${fullName}${a.customerPhone ? ' · 📞 '+a.customerPhone : ''}${collectAmt ? ' · ยอดเรียกเก็บ '+collectAmt.toLocaleString('th-TH')+' บาท' : ''}`;
 }
 
 function showManualCustomer(showBackBtn){
