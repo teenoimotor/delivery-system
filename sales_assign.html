@@ -346,6 +346,8 @@ const LIFF_ID_SALES   = "2010158828-XEfqh9nA";
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKKb1MDHvEJUEgjIPSVZwqJ3c4ITFOTwqkPEAoHhYRsBi6dNN2kcED2-O13nG0YqQo/exec";
 const BRANCH_PRESETS  = ['สาขาติวานนท์','สาขาบางบัวทอง','มอเตอร์ไซค์ฝั่งธน'];
 
+const DRAFT_KEY = 'salesAssignDraft_v1';
+
 const state = {
   liffReady: false,
   profile: null,
@@ -360,6 +362,78 @@ const toast = (msg, ms=2400) => {
   clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove('show'), ms);
 };
 
+/* ========== Local Draft ========== */
+function saveDraftLocal(){
+  if (state.editAssignId) return; // ไม่บันทึกร่างขณะกำลังแก้ไขงาน
+  const data = {
+    custName:       $('custName').value,
+    custPhone:      $('custPhone').value,
+    deliveryDate:   $('deliveryDate').value,
+    deliveryTime:   $('deliveryTime').value,
+    bikeModel:      $('bikeModel').value,
+    bikeColor:      $('bikeColor').value,
+    pickupBranch:   $('pickupBranch').value,
+    pickupOther:    $('pickupOther').value,
+    googleMapsUrl:  $('googleMapsUrl').value,
+    deliveryDetail: $('deliveryDetail').value,
+    collectAmount:  $('collectAmount').value,
+    note:           $('note').value,
+    savedAt:        new Date().toISOString()
+  };
+  try{ localStorage.setItem(DRAFT_KEY, JSON.stringify(data)); }catch(_){}
+}
+
+function loadDraftLocal(){
+  try{ const raw = localStorage.getItem(DRAFT_KEY); return raw ? JSON.parse(raw) : null; }catch(_){ return null; }
+}
+
+function clearDraftLocal(){
+  try{ localStorage.removeItem(DRAFT_KEY); }catch(_){}
+}
+
+function applyDraft(d){
+  if (!d) return;
+  $('custName').value       = d.custName||'';
+  $('custPhone').value      = d.custPhone||'';
+  if (d.deliveryDate) $('deliveryDate').value = d.deliveryDate;
+  if (d.deliveryTime) $('deliveryTime').value = d.deliveryTime;
+  $('bikeModel').value      = d.bikeModel||'';
+  $('bikeColor').value      = d.bikeColor||'';
+  $('googleMapsUrl').value  = d.googleMapsUrl||'';
+  $('deliveryDetail').value = d.deliveryDetail||'';
+  $('collectAmount').value  = d.collectAmount||'';
+  $('note').value           = d.note||'';
+  if (d.pickupBranch){ $('pickupBranch').value = d.pickupBranch; toggleOther('pickupBranch','pickupOther'); }
+  if (d.pickupOther)  $('pickupOther').value = d.pickupOther;
+  updateMapsPreview();
+}
+
+function checkAndRestoreDraft(){
+  const d = loadDraftLocal();
+  if (!d || !d.custName) return;
+  const savedAt = d.savedAt ? new Date(d.savedAt).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '';
+  const banner  = document.createElement('div');
+  banner.id = 'draftBanner';
+  banner.style.cssText = 'background:#fef3c7;border:1px solid #fbbf24;color:#92400e;border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;';
+  banner.innerHTML = `<span>📋 มีร่างที่บันทึกไว้${savedAt?' เวลา '+savedAt:''} — ลูกค้า: <b>${escape_(d.custName)}</b></span>
+    <div style="display:flex;gap:6px;flex-shrink:0;">
+      <button onclick="confirmRestoreDraft()" style="background:#f59e0b;color:#fff;border:none;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">กู้คืน</button>
+      <button onclick="discardDraft()" style="background:#fff;color:#92400e;border:1px solid #fbbf24;padding:5px 10px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;">ทิ้ง</button>
+    </div>`;
+  const fs = $('formSection');
+  fs.insertBefore(banner, fs.firstChild);
+}
+
+function confirmRestoreDraft(){
+  applyDraft(loadDraftLocal());
+  const b = $('draftBanner'); if (b) b.remove();
+  toast('กู้คืนร่างเรียบร้อย ✓');
+}
+function discardDraft(){
+  clearDraftLocal();
+  const b = $('draftBanner'); if (b) b.remove();
+}
+
 /* ========== LIFF Init ========== */
 async function initLIFF(){
   try{
@@ -369,6 +443,7 @@ async function initLIFF(){
     if (!liff.isLoggedIn()){ liff.login(); return; }
     state.profile = await liff.getProfile();
     $('userName').textContent = 'พนักงานขาย: ' + (state.profile.displayName||'-');
+    checkAndRestoreDraft();
     // ดัก groupId จาก LIFF context เมื่อเปิดจากกลุ่ม LINE
     try{
       const ctx = liff.getContext();
@@ -551,6 +626,7 @@ async function submitAssign(){
 
     state.editAssignId = null;
     $('editBanner').classList.remove('show');
+    clearDraftLocal();
     showSuccess({ custName, deliveryDate, deliveryTime, bikeModel, bikeColor, pickupLoc, googleMapsUrl, collectAmount });
   }catch(e){
     console.error('submitAssign error:', e);
@@ -587,6 +663,8 @@ function clearForm(){
   $('note').value = '';
   state.editAssignId = null;
   $('editBanner').classList.remove('show');
+  clearDraftLocal();
+  const b = $('draftBanner'); if (b) b.remove();
 }
 
 /* ========== Tabs ========== */
@@ -726,6 +804,14 @@ function cancelEdit(){
 
 /* ========== Bind ========== */
 function bind(){
+  // Auto-save draft (debounced 1.2 วิ หลังหยุดพิมพ์)
+  let _draftTimer;
+  const debouncedSave = () => { clearTimeout(_draftTimer); _draftTimer = setTimeout(saveDraftLocal, 1200); };
+  ['custName','custPhone','deliveryDate','deliveryTime','bikeColor',
+   'googleMapsUrl','deliveryDetail','collectAmount','note','pickupOther'
+  ].forEach(id=>{ const el=$(id); if(el) el.addEventListener('input', debouncedSave); });
+  ['bikeModel','pickupBranch'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('change', debouncedSave); });
+
   $('collectAmount').addEventListener('input', ()=>formatComma($('collectAmount')));
   $('pickupBranch').addEventListener('change', ()=>toggleOther('pickupBranch','pickupOther'));
   $('googleMapsUrl').addEventListener('input', updateMapsPreview);
