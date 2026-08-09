@@ -501,6 +501,19 @@ const toast = (msg, ms=2400) => {
   clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove('show'), ms);
 };
 
+/* ========== Button lock (ป้องกันกดซ้ำ) ========== */
+function btnLock(el, loadingText){
+  if (!el || el.disabled) return;
+  el.disabled = true;
+  el._origHTML = el.innerHTML;
+  el.innerHTML = '<span class="spinner"></span>' + (loadingText || '');
+}
+function btnUnlock(el){
+  if (!el) return;
+  el.disabled = false;
+  if (el._origHTML !== undefined) el.innerHTML = el._origHTML;
+}
+
 /* ========== LIFF Init ========== */
 async function initLIFF(){
   try{
@@ -991,15 +1004,18 @@ function continueDraft(tripId){
   setTimeout(()=>$('stopCard-1').scrollIntoView({behavior:'smooth',block:'start'}), 200);
 }
 
-async function deleteDraft(tripId){
+async function deleteDraft(tripId, btn){
   if (!confirm('ต้องการลบร่างนี้?')) return;
+  btnLock(btn, 'กำลังลบ...');
   try{
-    await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ action:'deleteDraft', tripId }) });
+    const q = new URLSearchParams({ action:'deleteDraft', tripId });
+    await fetch(APPS_SCRIPT_URL + '?' + q.toString(), { mode:'no-cors' });
     toast('ลบร่างแล้ว');
     setTimeout(renderDraftList, 800);
-  }catch(e){ toast('ลบไม่สำเร็จ'); }
+  }catch(e){
+    toast('ลบไม่สำเร็จ');
+    btnUnlock(btn);
+  }
 }
 
 function newTrip(){
@@ -1197,7 +1213,7 @@ function bind(){
     if (!btn) return;
     const id = btn.dataset.id, act = btn.dataset.act;
     if (act==='continue') continueDraft(id);
-    else if (act==='delete') deleteDraft(id);
+    else if (act==='delete') deleteDraft(id, btn);
   });
 
   // Assignment list delegation
@@ -1289,6 +1305,21 @@ function showHistoryPage(){
 }
 
 /* ========== Evidence Page ========== */
+function showEvidenceSuccess(alreadyDone){
+  $('evidencePage').innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+      min-height:60vh;padding:32px;text-align:center;">
+      <div style="font-size:56px;margin-bottom:16px;">✅</div>
+      <div style="font-size:18px;font-weight:700;color:#065f46;margin-bottom:8px;">จัดส่งสำเร็จ</div>
+      <div style="font-size:14px;color:#6b7280;margin-bottom:24px;">
+        ${alreadyDone ? 'ดำเนินการนี้ไปแล้ว — สถานะถูกอัปเดตเรียบร้อย' : 'อัปโหลดหลักฐานเรียบร้อย<br>ระบบได้อัปเดตสถานะและแจ้งกลุ่มแล้ว'}
+      </div>
+      <button onclick="if(liff&&liff.isInClient())liff.closeWindow();else window.close();"
+        style="background:#10b981;color:#fff;border:none;padding:13px 32px;border-radius:12px;
+          font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">ปิดหน้าต่าง</button>
+    </div>`;
+}
+
 function getUrlParam(key){
   const usp = new URLSearchParams(location.search);
   if (usp.get(key)) return usp.get(key);
@@ -1341,17 +1372,9 @@ async function submitEvidence(){
     const res  = await fetch(APPS_SCRIPT_URL, { method:'POST', body });
     const data = await res.json();
     if (data.ok){
-      // แสดง success แล้วปิด LIFF
-      $('evidencePage').innerHTML = `
-        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
-          min-height:60vh;padding:32px;text-align:center;">
-          <div style="font-size:56px;margin-bottom:16px;">✅</div>
-          <div style="font-size:18px;font-weight:700;color:#065f46;margin-bottom:8px;">จัดส่งสำเร็จ</div>
-          <div style="font-size:14px;color:#6b7280;margin-bottom:24px;">อัปโหลดหลักฐานเรียบร้อย<br>ระบบได้อัปเดตสถานะและแจ้งกลุ่มแล้ว</div>
-          <button onclick="if(liff&&liff.isInClient())liff.closeWindow();else window.close();"
-            style="background:#10b981;color:#fff;border:none;padding:13px 32px;border-radius:12px;
-              font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">ปิดหน้าต่าง</button>
-        </div>`;
+      // บันทึก flag ป้องกันเปิดหน้านี้ซ้ำแล้วส่งซ้ำ
+      try{ if (state._evidenceAssignId) localStorage.setItem('evidenceDone_' + state._evidenceAssignId, '1'); }catch(_){}
+      showEvidenceSuccess(data.alreadyDone);
     } else {
       throw new Error(data.error || 'Upload failed');
     }
@@ -1376,6 +1399,14 @@ async function submitEvidence(){
     $('badge').textContent = '';
     $('evAssignInfo').textContent = assignId ? 'งาน: ' + assignId : '';
     state._evidenceAssignId = assignId;
+    // ถ้าเคยอัปโหลดแล้ว (flag ใน localStorage) → แสดง done ทันที ไม่เปิดฟอร์มซ้ำ
+    try{
+      if (assignId && localStorage.getItem('evidenceDone_' + assignId)){
+        await initLIFF();
+        showEvidenceSuccess(true);
+        return;
+      }
+    }catch(_){}
     await initLIFF();
     bindCopyUserId();
   } else {
