@@ -796,6 +796,10 @@ async function renderJobSelector(){
   const items = await fetchAssignments();
   state._assignsCache = items;
 
+  // หยุด render ถ้า driver กำลังทำ draft หรือเลือก job ไปแล้วระหว่าง fetch
+  // (ป้องกัน race condition: fetch เสร็จช้ากว่าที่ user กด ทำต่อ)
+  if (state.currentDraftId || state.currentAssignId) return;
+
   if (!items.length){
     // ไม่มีงาน → แสดง manual input โดยตรง
     list.innerHTML = '<div class="job-loading">ไม่มีตารางงานในขณะนี้</div>';
@@ -860,9 +864,11 @@ function selectJob(assignId){
     </div>`;
   $('manualCustomerWrap').style.display = 'none';
 
-  // ซิงค์ข้อมูลไปยังฟอร์ม
-  $('tripDate').value = a.deliveryDate ? String(a.deliveryDate).slice(0,10) : '';
-  $('tripTime').value = a.deliveryTime ? String(a.deliveryTime).slice(0,5)  : '';
+  // ซิงค์ข้อมูลไปยังฟอร์ม — ถ้ากำลังทำ draft อยู่ ไม่ต้องแทนที่วันที่/เวลา
+  if (!state.currentDraftId) {
+    $('tripDate').value = a.deliveryDate ? String(a.deliveryDate).slice(0,10) : '';
+    $('tripTime').value = a.deliveryTime ? String(a.deliveryTime).slice(0,5)  : '';
+  }
   setStopName(0, a.pickupLocation || '');
 
   state.currentAssignId = assignId;
@@ -1007,6 +1013,8 @@ function continueDraft(tripId){
   $(`stopLock-0`).style.display = 'inline-block';
   $('draftCard').style.display = 'none';
   $('draftBanner').style.display = 'flex';
+  // ลบ form backup เก่าออก ป้องกัน restoreFormBackup ทับค่าจาก draft เมื่อ reload
+  try { localStorage.removeItem('_liff_backup'); } catch(_) {}
   setTimeout(()=>$('stopCard-1').scrollIntoView({behavior:'smooth',block:'start'}), 200);
 }
 
@@ -1075,31 +1083,34 @@ async function saveDraft(){
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>กำลังบันทึก...';
   try{
     const payload = {
-      action:'saveDraft',
-      draftTripId: state.currentDraftId || null,
-      driverId: state.profile?.userId||'unknown',
-      driverName: state.profile?.displayName||'unknown',
+      action:     'saveDraft',
+      tripId:     state.currentDraftId || '',   // ← ชื่อตรงกับ GAS (เดิมส่ง draftTripId ซึ่ง GAS ไม่รู้จัก)
+      assignId:   state.currentAssignId || '',
+      driverId:   state.profile?.userId   || 'unknown',
+      driverName: state.profile?.displayName || 'unknown',
       date, time, customer,
       stop0Name: s0Name,
-      stop0Lat: state.stops[0].lat, stop0Lng: state.stops[0].lng, stop0Acc: state.stops[0].acc,
+      stop0Lat:  state.stops[0].lat || '', stop0Lng: state.stops[0].lng || '', stop0Acc: state.stops[0].acc || '',
       stop0Mileage: s0Mile,
       stop0Photo: (state.stops[0].photoB64 || state.stops[0].hasSavedPhoto) ? '1' : '',
-      stop0PhotoType: state.stops[0].photoType||'image/jpeg',
+      stop0PhotoType: state.stops[0].photoType || 'image/jpeg',
       stop1Name: getStopName(1),
-      stop1Lat: state.stops[1].lat, stop1Lng: state.stops[1].lng, stop1Acc: state.stops[1].acc,
-      stop1Mileage: parseFloat($('stopMileage-1')?.value)||'',
+      stop1Lat:  state.stops[1].lat || '', stop1Lng: state.stops[1].lng || '', stop1Acc: state.stops[1].acc || '',
+      stop1Mileage: parseFloat($('stopMileage-1')?.value) || '',
       stop1Photo: (state.stops[1].photoB64 || state.stops[1].hasSavedPhoto) ? '1' : '',
-      stop1PhotoType: state.stops[1].photoType||'image/jpeg',
+      stop1PhotoType: state.stops[1].photoType || 'image/jpeg',
       stop2Name: getStopName(2),
-      stop2Lat: state.stops[2].lat, stop2Lng: state.stops[2].lng, stop2Acc: state.stops[2].acc,
-      stop2Mileage: parseFloat($('stopMileage-2')?.value)||'',
+      stop2Lat:  state.stops[2].lat || '', stop2Lng: state.stops[2].lng || '', stop2Acc: state.stops[2].acc || '',
+      stop2Mileage: parseFloat($('stopMileage-2')?.value) || '',
       stop2Photo: (state.stops[2].photoB64 || state.stops[2].hasSavedPhoto) ? '1' : '',
-      stop2PhotoType: state.stops[2].photoType||'image/jpeg',
+      stop2PhotoType: state.stops[2].photoType || 'image/jpeg',
       note: $('note').value.trim(),
       savedAt: new Date().toISOString()
     };
-    await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors',
-      headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(payload) });
+    // ใช้ GET + URLSearchParams (หลีกเลี่ยง GAS POST 302 redirect ที่ทำให้ body หาย)
+    const q = new URLSearchParams();
+    Object.entries(payload).forEach(([k,v]) => q.set(k, v == null ? '' : String(v)));
+    await fetch(APPS_SCRIPT_URL + '?' + q.toString(), { mode: 'no-cors' });
     toast('บันทึกร่างเรียบร้อย');
     setTimeout(()=>{
       if (state.liffReady && liff.isInClient()) liff.closeWindow();
