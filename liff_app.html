@@ -690,10 +690,13 @@ function compressPhoto(file, maxPx=800, quality=0.75){
 /** key สำหรับ localStorage รูปของ stop แต่ละจุด */
 function photoKey(draftId, idx){ return `draftPhoto_${draftId||'_pending'}_${idx}`; }
 
-/** ลบรูปทุก stop ของ draft ออกจาก localStorage */
-function clearLocalPhotos(draftId){
+/** ลบรูปและ meta ทั้งหมดของ draft ออกจาก localStorage */
+function clearLocalDraft(draftId){
   for(let i=0;i<4;i++) try{ localStorage.removeItem(photoKey(draftId,i)); }catch(_){}
+  try{ localStorage.removeItem(`draftMeta_${draftId}`); }catch(_){}
 }
+/** @deprecated ใช้ clearLocalDraft แทน */
+function clearLocalPhotos(draftId){ clearLocalDraft(draftId); }
 
 async function handlePhoto(idx){
   const inp   = $(`stopPhoto-${idx}`);
@@ -981,8 +984,15 @@ async function renderDraftList(){
 function continueDraft(tripId){
   const d = (state._draftsCache||[]).find(x=>x.tripId===tripId);
   if (!d) return toast('ไม่พบร่าง');
-  $('tripDate').value = d.date ? String(d.date).slice(0,10) : '';
-  $('tripTime').value = d.time ? String(d.time).slice(0,5) : '';
+  // กู้คืน date/time จาก localStorage ก่อน (string ที่ถูกต้องจาก client)
+  // GAS อาจ auto-convert เป็น Date object → timezone เคลื่อน → ใช้ local เป็น primary
+  let _resDate = '', _resTime = '';
+  try{
+    const _meta = JSON.parse(localStorage.getItem(`draftMeta_${tripId}`) || '{}');
+    _resDate = _meta.date || ''; _resTime = _meta.time || '';
+  }catch(_){}
+  $('tripDate').value = _resDate || (d.date ? String(d.date).slice(0,10) : '');
+  $('tripTime').value = _resTime || (d.time ? String(d.time).slice(0,5) : '');
   const custPresets = ['โยกรถ','รับรถ'];
   const custVal = d.customer || '';
   if (custPresets.includes(custVal)){
@@ -1076,7 +1086,7 @@ async function deleteDraft(tripId, btn){
   try{
     const q = new URLSearchParams({ action:'deleteDraft', tripId });
     await fetch(APPS_SCRIPT_URL + '?' + q.toString(), { mode:'no-cors' });
-    clearLocalPhotos(tripId);   // ลบรูปใน localStorage ด้วย
+    clearLocalDraft(tripId);   // ลบรูปและ meta ใน localStorage ด้วย
     toast('ลบร่างแล้ว');
     setTimeout(renderDraftList, 800);
   }catch(e){
@@ -1175,6 +1185,8 @@ async function saveDraft(){
     const q = new URLSearchParams();
     Object.entries(payload).forEach(([k,v]) => q.set(k, v == null ? '' : String(v)));
     await fetch(APPS_SCRIPT_URL + '?' + q.toString(), { mode: 'no-cors' });
+    // เก็บ date/time ใน localStorage — ป้องกัน GAS auto-convert เป็น Date object แล้ว timezone เคลื่อน
+    try{ localStorage.setItem(`draftMeta_${state.currentDraftId}`, JSON.stringify({date, time})); }catch(_){}
     toast('บันทึกร่างเรียบร้อย');
     setTimeout(()=>{
       if (state.liffReady && liff.isInClient()) liff.closeWindow();
@@ -1244,9 +1256,9 @@ async function submit(){
       }catch(e){}
     }
 
-    // ลบรูปใน localStorage หลัง submit สำเร็จ
-    if(state.currentDraftId) clearLocalPhotos(state.currentDraftId);
-    clearLocalPhotos('_pending');
+    // ลบรูปและ meta ใน localStorage หลัง submit สำเร็จ
+    if(state.currentDraftId) clearLocalDraft(state.currentDraftId);
+    clearLocalDraft('_pending');
     showSuccessOverlay({ date, time, customer, stopsData, totalKm });
   }catch(e){ toast('ส่งข้อมูลไม่สำเร็จ ลองใหม่'); }
   finally{ btn.disabled=false; btn.innerHTML='ส่งเพื่ออนุมัติ'; }
