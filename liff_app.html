@@ -664,15 +664,57 @@ function fileToB64(file){
   });
 }
 
+/** บีบอัดรูปด้วย canvas → base64 JPEG (maxPx: ด้านยาวสูงสุด) */
+function compressPhoto(file, maxPx=800, quality=0.75){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = ev => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality).split(',')[1]);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/** key สำหรับ localStorage รูปของ stop แต่ละจุด */
+function photoKey(draftId, idx){ return `draftPhoto_${draftId||'_pending'}_${idx}`; }
+
+/** ลบรูปทุก stop ของ draft ออกจาก localStorage */
+function clearLocalPhotos(draftId){
+  for(let i=0;i<4;i++) try{ localStorage.removeItem(photoKey(draftId,i)); }catch(_){}
+}
+
 async function handlePhoto(idx){
   const inp   = $(`stopPhoto-${idx}`);
   const thumb = $(`stopPhotoThumb-${idx}`);
   const file = inp.files[0]; if (!file) return;
   state.stops[idx].photoType = file.type || 'image/jpeg';
+  // ✓ ตั้ง hasSavedPhoto = true ทันทีที่เลือกไฟล์ (ป้องกัน race condition
+  //   ที่ driver กด บันทึกร่าง ก่อน B64 โหลดเสร็จ → flag ถูกส่งให้ GAS เสมอ)
+  state.stops[idx].hasSavedPhoto = true;
+  // Preview ทันที (full-res data URL)
   const r = new FileReader();
   r.onload = e => { thumb.classList.remove('saved'); thumb.innerHTML = `<img src="${e.target.result}" alt="" />`; };
   r.readAsDataURL(file);
-  try{ state.stops[idx].photoB64 = await fileToB64(file); }catch(e){}
+  try{
+    // B64 เต็มสำหรับ submit (ใช้ตอนส่งงานจริง)
+    state.stops[idx].photoB64 = await fileToB64(file);
+    // บีบอัดแล้วเก็บ localStorage → รอด LIFF reload / ทำต่อครั้งหน้า
+    const compressed = await compressPhoto(file);
+    const draftId = state.currentDraftId || '_pending';
+    try{ localStorage.setItem(photoKey(draftId, idx), compressed); }catch(_){}
+  }catch(e){}
 }
 
 /* ========== Branch dropdown ========== */
@@ -963,23 +1005,38 @@ function continueDraft(tripId){
       </div>`;
     $('manualCustomerWrap').style.display = 'none';
   }
+  // helper: กู้คืนรูปจาก localStorage (compressed) หรือแสดง flag "มีรูป"
+  function _restorePhoto(i, flagFromGAS){
+    try{
+      const stored = localStorage.getItem(photoKey(tripId, i));
+      if(stored){
+        state.stops[i].photoB64  = stored;
+        state.stops[i].hasSavedPhoto = true;
+        $(`stopPhotoThumb-${i}`).classList.remove('saved');
+        $(`stopPhotoThumb-${i}`).innerHTML = `<img src="data:image/jpeg;base64,${stored}" alt="" style="max-height:60px;border-radius:4px;" />`;
+        return;
+      }
+    }catch(_){}
+    // ไม่มีใน localStorage → ใช้ flag จาก GAS แทน
+    state.stops[i].hasSavedPhoto = !!flagFromGAS;
+    if(flagFromGAS){
+      $(`stopPhotoThumb-${i}`).classList.add('saved');
+      $(`stopPhotoThumb-${i}`).innerHTML = 'มีรูป';
+    }
+  }
+
   // Restore stop 0 (locked)
   setStopName(0, d.stop0Name||'');
   $('stopMileage-0').value = d.stop0Mileage||'';
   state.stops[0].lat          = d.stop0Lat  ? String(d.stop0Lat)  : null;
   state.stops[0].lng          = d.stop0Lng  ? String(d.stop0Lng)  : null;
   state.stops[0].acc          = d.stop0Acc  || null;
-  state.stops[0].photoB64     = (d.stop0Photo && d.stop0Photo !== '1') ? d.stop0Photo : null;
   state.stops[0].photoType    = d.stop0PhotoType || 'image/jpeg';
-  state.stops[0].hasSavedPhoto = !!(d.stop0Photo || d.stop0PhotoURL);
   if (d.stop0Lat){
     $('stopCoords-0').textContent = `${d.stop0Lat}, ${d.stop0Lng}`;
     $('stopCoords-0').classList.add('has-value');
   }
-  if (d.stop0Photo || d.stop0PhotoURL){
-    $('stopPhotoThumb-0').classList.add('saved');
-    $('stopPhotoThumb-0').innerHTML = 'มีรูป';
-  }
+  _restorePhoto(0, d.stop0Photo || d.stop0PhotoURL);
 
   // Restore stops 1-2
   for (let i=1; i<=2; i++){
@@ -994,16 +1051,11 @@ function continueDraft(tripId){
     state.stops[i].lat  = sLat ? String(sLat) : null;
     state.stops[i].lng  = sLng ? String(sLng) : null;
     state.stops[i].acc  = sAcc;
-    state.stops[i].hasSavedPhoto = !!sPhoto;
-    state.stops[i].photoB64      = (sPhoto && sPhoto !== '1') ? sPhoto : null;
     if (sLat){
       $(`stopCoords-${i}`).textContent = `${sLat}, ${sLng}`;
       $(`stopCoords-${i}`).classList.add('has-value');
     }
-    if (sPhoto){
-      $(`stopPhotoThumb-${i}`).classList.add('saved');
-      $(`stopPhotoThumb-${i}`).innerHTML = 'มีรูป';
-    }
+    _restorePhoto(i, sPhoto);
   }
 
   if (d.note) $('note').value = d.note;
@@ -1024,6 +1076,7 @@ async function deleteDraft(tripId, btn){
   try{
     const q = new URLSearchParams({ action:'deleteDraft', tripId });
     await fetch(APPS_SCRIPT_URL + '?' + q.toString(), { mode:'no-cors' });
+    clearLocalPhotos(tripId);   // ลบรูปใน localStorage ด้วย
     toast('ลบร่างแล้ว');
     setTimeout(renderDraftList, 800);
   }catch(e){
@@ -1082,9 +1135,20 @@ async function saveDraft(){
   const btn = $('btnDraft');
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>กำลังบันทึก...';
   try{
+    // สร้าง draftId ฝั่ง client ทันทีถ้ายังไม่มี (ทำให้ localStorage photos ใช้ key เดียวกับ GAS)
+    if (!state.currentDraftId) {
+      state.currentDraftId = 'D' + Date.now();
+      // ย้ายรูป pending ที่ถ่ายก่อนสร้าง draft ให้มาใช้ key ที่ถูกต้อง
+      for(let i=0;i<4;i++){
+        try{
+          const p = localStorage.getItem(photoKey('_pending', i));
+          if(p){ localStorage.setItem(photoKey(state.currentDraftId, i), p); localStorage.removeItem(photoKey('_pending', i)); }
+        }catch(_){}
+      }
+    }
     const payload = {
       action:     'saveDraft',
-      tripId:     state.currentDraftId || '',   // ← ชื่อตรงกับ GAS (เดิมส่ง draftTripId ซึ่ง GAS ไม่รู้จัก)
+      tripId:     state.currentDraftId,   // ← สร้างฝั่ง client แล้ว ตรงกับ GAS เสมอ
       assignId:   state.currentAssignId || '',
       driverId:   state.profile?.userId   || 'unknown',
       driverName: state.profile?.displayName || 'unknown',
@@ -1180,6 +1244,9 @@ async function submit(){
       }catch(e){}
     }
 
+    // ลบรูปใน localStorage หลัง submit สำเร็จ
+    if(state.currentDraftId) clearLocalPhotos(state.currentDraftId);
+    clearLocalPhotos('_pending');
     showSuccessOverlay({ date, time, customer, stopsData, totalKm });
   }catch(e){ toast('ส่งข้อมูลไม่สำเร็จ ลองใหม่'); }
   finally{ btn.disabled=false; btn.innerHTML='ส่งเพื่ออนุมัติ'; }
