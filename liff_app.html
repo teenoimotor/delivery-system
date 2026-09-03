@@ -632,6 +632,7 @@ function restoreFormBackup(){
       state.currentDraftId = b.currentDraftId||null;
       state.stop0Locked    = b.stop0Locked||false;
       state.numStops       = b.numStops||3;
+      if (b.numStops === 4 && !$('stopCard-3')) addStop4();  // สร้าง DOM ก่อน restore stop 4
       (b.stops||[]).forEach((s,i)=>{
         if (i>=4) return;
         state.stops[i].lat  = s.lat||null;
