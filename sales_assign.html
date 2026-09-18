@@ -60,8 +60,11 @@
   .btn-submit{flex:1;background:var(--blue);color:#fff;border:none;padding:13px;border-radius:11px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;}
   .btn-submit:active{background:var(--blue-dark);}
   .btn-submit:disabled{background:#9ca3af;cursor:not-allowed;}
-  .btn-clear{background:#fff;color:var(--muted);border:1px solid var(--line);padding:13px 16px;border-radius:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;}
+  .btn-clear{background:#fff;color:var(--muted);border:1px solid var(--line);padding:13px 12px;border-radius:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;}
   .btn-clear:active{background:#f3f4f6;}
+  .btn-draft{flex:1;background:#fff;color:#92400e;border:1.5px solid #fbbf24;padding:13px;border-radius:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;}
+  .btn-draft:active{background:#fef3c7;}
+  .btn-draft:disabled{opacity:.5;cursor:not-allowed;}
   /* Driver card */
   .driver-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
   .driver-option{background:#f9fafb;border:2px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;transition:all .15s;text-align:center;}
@@ -283,6 +286,7 @@
 
 <div class="footer-bar" id="footerForm">
   <button class="btn-clear" id="btnClear">ล้าง</button>
+  <button class="btn-draft" id="btnDraft">📋 บันทึกร่าง</button>
   <button class="btn-submit" id="btnSubmit">บันทึกงานจัดส่ง</button>
 </div>
 
@@ -343,7 +347,7 @@
    ** ตั้งค่า LIFF_ID_SALES ให้ตรงกับ LIFF ID ของพนักงานขาย **
    =========================================================== */
 const LIFF_ID_SALES   = "2010158828-XEfqh9nA";
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKKb1MDHvEJUEgjIPSVZwqJ3c4ITFOTwqkPEAoHhYRsBi6dNN2kcED2-O13nG0YqQo/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwaTt81m7y9Er2h59R-sv0Z69ktD-DiKuQ3eem3-NQIq6xPrzOyMnoJIVUF52ssa2HwNw/exec";
 const BRANCH_PRESETS  = ['สาขาติวานนท์','สาขาบางบัวทอง','มอเตอร์ไซค์ฝั่งธน'];
 
 const DRAFT_KEY = 'salesAssignDraft_v1';
@@ -389,6 +393,16 @@ function loadDraftLocal(){
 
 function clearDraftLocal(){
   try{ localStorage.removeItem(DRAFT_KEY); }catch(_){}
+}
+
+function saveDraftManual(){
+  const custName = $('custName').value.trim();
+  if (!custName){ toast('กรุณากรอกชื่อลูกค้าก่อนบันทึกร่าง'); return; }
+  saveDraftLocal();
+  const btn = $('btnDraft');
+  btn.textContent = '✓ บันทึกร่างแล้ว';
+  btn.disabled = true;
+  setTimeout(()=>{ btn.textContent = '📋 บันทึกร่าง'; btn.disabled = false; }, 2000);
 }
 
 function applyDraft(d){
@@ -732,19 +746,33 @@ function hideCancelModal(){
 async function confirmCancelAssign(){
   const assignId = state.cancelAssignId;
   if (!assignId) return;
+  const btn = document.querySelector('#cancelModal .modal-btn-confirm');
+  btnLock(btn, 'กำลังยกเลิก...');
   const reason = $('cancelReason').value.trim();
-  const bodyStr = JSON.stringify({ action:'cancelAssign', assignId, cancelReason:reason, salesId:state.profile?.userId||'' });
-  try{ await fetch(APPS_SCRIPT_URL,{method:'POST',mode:'no-cors',body:bodyStr}); }catch(_){}
   try{
-    const q = new URLSearchParams({ action:'cancelAssign', assignId, cancelReason:reason });
-    await fetch(APPS_SCRIPT_URL+'?'+q.toString(),{mode:'no-cors'});
+    const q = new URLSearchParams({ action:'cancelAssign', assignId, cancelReason:reason, salesId:state.profile?.userId||'' });
+    await fetch(APPS_SCRIPT_URL + '?' + q.toString(), { mode:'no-cors' });
   }catch(_){}
   hideCancelModal();
+  btnUnlock(btn);
   toast('ยกเลิกงานเรียบร้อย');
   setTimeout(loadHistory, 1200);
 }
 
 function escape_(s){ return String(s||'-').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ========== Button lock (ป้องกันกดซ้ำ) ========== */
+function btnLock(el, loadingText){
+  if (!el || el.disabled) return;
+  el.disabled = true;
+  el._origHTML = el.innerHTML;
+  el.innerHTML = '<span class="spinner"></span>' + (loadingText || '');
+}
+function btnUnlock(el){
+  if (!el) return;
+  el.disabled = false;
+  if (el._origHTML !== undefined) el.innerHTML = el._origHTML;
+}
 
 /* ========== Evidence Modal ========== */
 function showEvidenceModal(url){
@@ -808,6 +836,7 @@ function bind(){
   $('pickupBranch').addEventListener('change', ()=>toggleOther('pickupBranch','pickupOther'));
   $('googleMapsUrl').addEventListener('input', updateMapsPreview);
   $('btnSubmit').addEventListener('click', submitAssign);
+  $('btnDraft').addEventListener('click', saveDraftManual);
   $('btnClear').addEventListener('click', ()=>{ if(confirm('ล้างข้อมูลทั้งหมด?')) clearForm(); });
   $('btnClose').addEventListener('click', ()=>{
     $('successOverlay').classList.remove('show');
