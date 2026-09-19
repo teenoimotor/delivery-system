@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>ระบบผู้บริหาร — สั่งงานจัดส่ง</title>
+<title>แบบฟอร์มมอบหมายงาน (พนักงานขับรถ)</title>
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
   :root{
-    --purple:#7c3aed;
-    --purple-dark:#6d28d9;
-    --purple-light:#ede9fe;
-    --bg:#f5f3ff;
+    --purple:#bf4c41;
+    --purple-dark:#a33b31;
+    --purple-light:#fdf0ef;
+    --bg:#fdf5f5;
     --card:#ffffff;
     --text:#1f2937;
     --muted:#6b7280;
@@ -22,7 +22,7 @@
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
-    font-family:"Sarabun","Noto Sans Thai",-apple-system,BlinkMacSystemFont,sans-serif;font-size:15px;line-height:1.45;}
+    font-family;"Sarabun","Noto Sans Thai",-apple-system,BlinkMacSystemFont,sans-serif;font-size:15px;line-height:1.45;}
   header{
     background:var(--purple);color:#fff;padding:14px 16px;
     display:flex;align-items:center;justify-content:space-between;
@@ -59,18 +59,9 @@
   .btn-submit:disabled{background:#9ca3af;cursor:not-allowed;}
   .btn-clear{background:#fff;color:var(--muted);border:1px solid var(--line);padding:13px 12px;border-radius:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;}
   .btn-clear:active{background:#f3f4f6;}
-  /* Driver grid */
-  .driver-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
-  .driver-option{background:#f9fafb;border:2px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;transition:all .15s;text-align:center;}
-  .driver-option:hover,.driver-option.selected{background:var(--purple-light);border-color:var(--purple);}
-  .driver-option .dname{font-size:13px;font-weight:600;color:var(--text);}
-  .driver-option.selected .dname{color:var(--purple);}
-  .driver-loading{font-size:12px;color:var(--muted);text-align:center;padding:12px;}
-  /* Other location */
+  /* Other / extra input */
   .other-input{margin-top:8px;}
-  /* Maps preview */
-  .maps-preview{margin-top:6px;font-size:12px;}
-  .maps-preview a{color:var(--purple);text-decoration:none;}
+  .map-input{margin-top:6px;}
   /* Page tabs */
   .page-tabs{display:flex;background:var(--purple-light);border-radius:12px;padding:4px;margin-bottom:14px;}
   .page-tab{flex:1;background:transparent;border:none;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;color:var(--purple);font-family:inherit;}
@@ -119,7 +110,7 @@
   .srow{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:13px;}
   .srow+.srow{border-top:1px dashed var(--line);}
   .srow .lab{color:var(--muted);flex-shrink:0;}
-  .srow .val{color:var(--text);font-weight:600;text-align:right;overflo7-wrap:anywhere;}
+  .srow .val{color:var(--text);font-weight:600;text-align:right;overflow-wrap:anywhere;}
   .success-actions{display:flex;gap:8px;}
   .success-actions button{flex:1;border:none;padding:12px;border-radius:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
   .btn-close-suc{background:#f3f4f6;color:var(--text);}
@@ -134,7 +125,7 @@
 
 <header>
   <div>
-    <h1 id="pageTitle">สั่งงานจัดส่ง (ผู้บริหาร)</h1>
+    <h1 id="pageTitle">แบบฟอร์มมอบหมายงาน (พนักงานขับรถ)</h1>
     <div class="user" id="userName">กำลังโหลด...</div>
   </div>
   <span class="badge" id="badge">ADMIN</span>
@@ -150,7 +141,7 @@
 <main id="mainPage" style="display:none;">
 
   <div class="page-tabs">
-    <button class="page-tab active" id="tabForm" onclick="showTab('form')">สั่งงาน</button>
+    <button class="page-tab active" id="tabForm" onclick="showTab('form')">มอบหมายงาน</button>
     <button class="page-tab" id="tabHistory" onclick="showTab('history')">🕐 ประวัติทั้งหมด</button>
   </div>
 
@@ -159,16 +150,18 @@
 
     <div class="edit-banner" id="editBanner">กำลังแก้ไขงาน <button onclick="cancelEdit()" style="float:right;background:none;border:none;font-size:13px;color:#92400e;cursor:pointer;font-weight:600;">ยกเลิก</button></div>
 
-    <!-- 1. Customer -->
+    <!-- 1. Job Type -->
     <div class="card">
-      <h2>① ข้อมูลลูกค้า</h2>
+      <h2>① ลักษณะงาน</h2>
       <div class="row">
-        <label>ชื่อ-นามสกุล <span class="req">*</span></label>
-        <input type="text" id="custName" placeholder="ชื่อ-นามสกุลลูกค้า" />
-      </div>
-      <div class="row">
-        <label>เบอร์ติดต่อ</label>
-        <input type="text" id="custPhone" inputmode="tel" placeholder="เช่น 0812345678" />
+        <label>ประเภทงาน <span class="req">*</span></label>
+        <select id="jobType" onchange="toggleOther('jobType','jobTypeOther')">
+          <option value="">— เลือกลักษณะงาน —</option>
+          <option value="โยกรถระหว่างร้าน/สาขา">โยกรถระหว่างร้าน/สาขา</option>
+          <option value="จัดส่งรถให้กับลูกค้า">จัดส่งรถให้กับลูกค้า</option>
+          <option value="__other__">อื่น ๆ ระบุรายละเอียด</option>
+        </select>
+        <input type="text" id="jobTypeOther" class="other-input" placeholder="ระบุลักษณะงาน..." style="display:none;" />
       </div>
     </div>
 
@@ -178,7 +171,7 @@
       <div class="row">
         <div class="datetime-row">
           <div class="dt-col dt-date">
-            <label>วันที่จัดส่ง <span class="req">*</span></label>
+            <label>วันที่ <span class="req">*</span></label>
             <input type="date" id="deliveryDate" />
           </div>
           <div class="dt-col">
@@ -220,53 +213,71 @@
       </div>
     </div>
 
-    <!-- 4. Driver -->
+    <!-- 4. Route -->
     <div class="card">
-      <h2>④ เลือกพนักงานขับรถ <span class="req">*</span></h2>
-      <div id="driverSection">
-        <div class="driver-loading">กำลังโหลดรายชื่อพนักงาน...</div>
-      </div>
-      <div class="hint" id="driverHint" style="margin-top:8px;display:none;">ℹ️ แจ้งเตือนตรงไปยัง LINE ของพนักงานที่เลือก</div>
-    </div>
+      <h2>④ เส้นทาง</h2>
 
-    <!-- 5. Pickup -->
-    <div class="card">
-      <h2>⑤ สถานที่รับรถ</h2>
+      <!-- ต้นทาง -->
       <div class="row">
-        <label>เลือกสถานที่รับรถ <span class="req">*</span></label>
-        <select id="pickupBranch">
-          <option value="">— เลือกสถานที่ —</option>
+        <label>ต้นทาง <span class="req">*</span></label>
+        <select id="origin" onchange="toggleOther('origin','originOther')">
+          <option value="">— เลือกต้นทาง —</option>
           <option value="สาขาติวานนท์">สาขาติวานนท์</option>
           <option value="สาขาบางบัวทอง">สาขาบางบัวทอง</option>
-          <option value="__other__">อื่น ๆ (ระบุเอง)</option>
+          <option value="__other__">อื่น ๆ ระบุรายละเอียด</option>
         </select>
-        <input type="text" id="pickupOther" class="other-input" placeholder="ระบุสถานที่รับรถ..." style="display:none;" />
+        <input type="text" id="originOther" class="other-input" placeholder="ระบุต้นทาง..." style="display:none;" />
       </div>
+
+      <!-- สถานที่รับรถ จุดที่ 1 -->
+      <div class="row">
+        <label>สถานที่รับรถ จุดที่ 1 <span class="req">*</span></label>
+        <select id="pickup1" onchange="togglePickupOther('pickup1','pickup1Other','pickup1Map')">
+          <option value="">— เลือกสถานที่รับรถ —</option>
+          <option value="ฝั่งธนมอเตอร์ไซค์ - สำนักงานใหญ่">ฝั่งธนมอเตอร์ไซค์ - สำนักงานใหญ่</option>
+          <option value="ฝั่งธนมอเตอร์ไซค์ - บางขุนนนท์">ฝั่งธนมอเตอร์ไซค์ - บางขุนนนท์</option>
+          <option value="ฝั่งธนมอเตอร์ไซค์ - วงเวียนบางกรวย">ฝั่งธนมอเตอร์ไซค์ - วงเวียนบางกรวย</option>
+          <option value="ฝั่งธนมอเตอร์ไซค์ - หมู่บ้านเศรฐกิจ">ฝั่งธนมอเตอร์ไซค์ - หมู่บ้านเศรฐกิจ</option>
+          <option value="__other__">อื่น ๆ ระบุรายละเอียด หรือ Google Map</option>
+        </select>
+        <input type="text" id="pickup1Other" class="other-input" placeholder="ระบุสถานที่รับรถ จุดที่ 1..." style="display:none;" />
+        <input type="text" id="pickup1Map" class="map-input" placeholder="Google Maps link (ถ้ามี)..." style="display:none;" />
+      </div>
+
+      <!-- สถานที่รับรถ จุดที่ 2 -->
+      <div class="row">
+        <label>สถานที่รับรถ จุดที่ 2 (หากมี)</label>
+        <select id="pickup2" onchange="togglePickupOther('pickup2','pickup2Other','pickup2Map')">
+          <option value="">— ไม่มีจุดรับรถที่ 2 —</option>
+          <option value="ฝั่งธนมอเตอร์ไซค์ - สำนักงานใหญ่">ฝั่งธนมอเตอร์ไซค์ - สำนักงานใหญ่</option>
+          <option value="ฝั่งธนมอเตอร์ไซค์ - บางขุนนนท์">ฝั่งธนมอเตอร์ไซค์ - บางขุนนนท์</option>
+          <option value="ฝั่งธนมอเตอร์ไซค์ - วงเวียนบางกรวย">ฝั่งธนมอเตอร์ไซค์ - วงเวียนบางกรวย</option>
+          <option value="ฝั่งธนมอเตอร์ไซค์ - หมู่บ้านเศรฐกิจ">ฝั่งธนมอเตอร์ไซค์ - หมู่บ้านเศรฐกิจ</option>
+          <option value="__other__">อื่น ๆ ระบุรายละเอียด หรือ Google Map</option>
+        </select>
+        <input type="text" id="pickup2Other" class="other-input" placeholder="ระบุสถานที่รับรถ จุดที่ 2..." style="display:none;" />
+        <input type="text" id="pickup2Map" class="map-input" placeholder="Google Maps link (ถ้ามี)..." style="display:none;" />
+      </div>
+
+      <!-- ปลายทาง -->
+      <div class="row">
+        <label>ปลายทาง <span class="req">*</span></label>
+        <select id="destination" onchange="togglePickupOther('destination','destinationOther','destinationMap')">
+          <option value="">— เลือกปลายทาง —</option>
+          <option value="สาขาติวานนท์">สาขาติวานนท์</option>
+          <option value="สาขาบางบัวทอง">สาขาบางบัวทอง</option>
+          <option value="__other__">อื่น ๆ ระบุรายละเอียด หรือ Google Map</option>
+        </select>
+        <input type="text" id="destinationOther" class="other-input" placeholder="ระบุปลายทาง..." style="display:none;" />
+        <input type="text" id="destinationMap" class="map-input" placeholder="Google Maps link (ถ้ามี)..." style="display:none;" />
+      </div>
+
     </div>
 
-    <!-- 6. Delivery -->
+    <!-- 6. Additional Detail -->
     <div class="card">
-      <h2>⑥ สถานที่จัดส่ง</h2>
-      <div class="row">
-        <label>พิกัด Google Maps</label>
-        <input type="text" id="googleMapsUrl" placeholder="วาง Google Maps link หรือ lat,lng..." />
-        <div class="hint">วาง link จาก Google Maps หรือพิกัด เช่น 13.7563,100.5018</div>
-        <div class="maps-preview" id="mapsPreview"></div>
-      </div>
-      <div clas="row">
-        <label>ราขษุเอียฤเพิ่มเติมมท่ิี ที่อยู่</label>
-        <textarea id="deliveryDetail" rows="2" placeholder="เช่น บ้านเลขที่ ถนน..."></textarea>
-      </div>
-      <div class="row">
-        <label>ยอดเรียกเก็บเงินปลายทาง (บาท)</label>
-        <input type="text" id="collectAmount" inputmode="numeric" placeholder="เช่น 1,500" />
-      </div>
-    </div>
-
-    <!-- 7. Note -->
-    <div class="card">
-      <h2>⑦ หมายเหตุ (ไม่บังคับ)</h2>
-      <textarea id="note" rows="2" placeholder="เช่น ป้ายทะเบียน, คำแนะนำพิเศษ..."></textarea>
+      <h2>⑤ รายละเอียดเพิ่มเติม</h2>
+      <textarea id="additionalDetail" rows="3" placeholder="ระบุข้อมูลเพิ่มเติม เช่น หมายเลขทะเบียน คำแนะนำพิเศษ..."></textarea>
     </div>
 
   </div><!-- /formSection -->
@@ -290,7 +301,7 @@
 <!-- Footer buttons -->
 <div class="footer-bar" id="footerForm" style="display:none;">
   <button class="btn-clear" id="btnClear">ล้าง</button>
-  <button class="btn-submit" id="btnSubmit">📤 สั่งงานจัดส่ง</button>
+  <button class="btn-submit" id="btnSubmit">📋 มอบหมายงาน</button>
 </div>
 
 <div class="footer-bar" id="footerHistory" style="display:none;">
@@ -300,7 +311,7 @@
 <!-- Cancel Modal -->
 <div class="modal-overlay" id="cancelModal">
   <div class="modal-box">
-    <div class="modal-title">ยกเลิกการจัดส่ง</div>
+    <div class="modal-title">ยกเลิกการมอบหมายงาน</div>
     <div class="modal-desc">กรุณาระบุเหตุผลการยกเลิก</div>
     <textarea id="cancelReason" rows="3" placeholder="เหตุผลการยกเลิก..."></textarea>
     <div class="modal-actions">
@@ -315,28 +326,36 @@
 <!-- Success Overlay -->
 <div class="success-overlay" id="successOverlay">
   <div class="success-card">
-    <h2>สั่งงานเรียบร้อย</h2>
+    <h2>มอบหมายงานเรียบร้อย</h2>
     <p class="desc">แจ้งเตือนตรงไปยังพนักงานขับรถและ Admin แล้ว</p>
     <div class="success-summary" id="sucSummary"></div>
     <div class="success-actions">
       <button class="btn-close-suc" id="btnCloseSuc">ปิด</button>
-      <button class="btn-new" id="btnNewAssign">สั่งงานใหม่</button>
+      <button class="btn-new" id="btnNewAssign">มอบหมายงานใหม่</button>
     </div>
   </div>
 </div>
 
 <script>
 /* ===========================================================
-   Admin Assignment LIFF — สำหรับผู้บริหารสั่งงานโดยตรง
-   - ตรวจสอบ LINE userId ว่าเป็น Admin (ผ่าน verifyAdmin)
+   Admin Assignment LIFF — แบบฟอร์มมอบหมายงาน (พนักงานขับรถ)
+   - ตรวจสอบ LINE userId ว่าเป็น Admin (ผ่านน verifyAdmin)
    - ส่งงานตรงไปยังพนักงานขับ (ไม่ผ่านกลุ่ม Sales)
    - แจ้งเตือน Admin ทุกคนผ่าน LINE Push
 
    ⚠️ ต้องแก้ LIFF_ID_ADMIN ให้ตรงกับ LIFF ที่สร้างในระบบ LINE Developers
    =========================================================== */
 const LIFF_ID_ADMIN   = "2010158828-kH1kskjo";
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwaTt81m7y9Er2h59R-sv0Z69ktD-DiKuQ3eem3-NQIq6xPrzOyMnoJIVUF52ssa2HwNw/exec";
-const BRANCH_PRESETS  = ['สาขาติวานนท์','สาขาบางบัวทอง'];
+const APPSS_SCRIPT_URL = "https://script.google.com/macros/J/AKfycbwaTt81m7y9Er2h59R-sv0Z69ktD-DiKuQ3eem3-NQIq6xPrzOyMnoJIVUF52ssa2HwNw/exec";
+
+const PICKUP_PRESETS = [
+  'ฝั่งธนมอเตอร์ไซค์ - สำนักงานใหญ่',
+  'ฝั่งธนมอเตอร์ไซค์ - บางขุนนนท์',
+  'ฝั่งธนมอเตอร์ไซค์ - วงเวียนบางกรวย',
+  'ฝั่งธนมอเตอร์ไซค์ - หมู่บ้านเศรฐกิจ',
+];
+const BRANCH_PRESETS = ['สาขาติวานนท์','สาขาบางบัวทอง'];
+const JOB_PRESETS    = ['โยกรถระหว่างร้าน/สาขา','จัดส่งรถให้กับลูกค้า'];
 
 const state = {
   liffReady:          false,
@@ -344,8 +363,6 @@ const state = {
   historyData:        [],
   historyFilter:      'all',
   editAssignId:       null,
-  selectedDriverId:   null,
-  selectedDriverName: null,
   cancelAssignId:     null,
 };
 
@@ -372,11 +389,10 @@ async function initLIFF(){
       return;
     }
 
-    $('userName').textContent = 'ผู้บริหาร: ' + (state.profile.displayName||'-');
+    $('userName').textContent = 'ผ่านกรอขสารท: ' + (state.profile.displayName||'-');
     $('mainPage').style.display = 'block';
     $('footerForm').style.display = 'flex';
     setTomorrow();
-    loadDrivers();
   }catch(e){
     showLiffError();
   }
@@ -385,16 +401,16 @@ async function initLIFF(){
 function showLiffError(){
   document.body.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
-      min-height:100vh;padding:32px;font-family:Sarabun,sans-serif;background:#f5f3ff;text-align:center;">
+      min-height:100vh;padding:32px;font-family:Sarabun,sans-serif;background:#fdf5f5;text-align:center;">
       <div style="font-size:48px;margin-bottom:16px;">📱</div>
-      <div style="font-size:18px;font-weight:700;color:#1f2937;margin-bottom:8px;">กรุณาเปิดผ่าน LINE</div>
+      <div style="font-size:18px;font-weight:700;color:#1f2937;margin-bottom:8px;">กรุณาธการผ่าน LINE</div>
       <div style="font-size:14px;color:#6b7280;margin-bottom:28px;line-height:1.6;">
         ระบบนี้ต้องเปิดผ่านแอป LINE เท่านั้น
       </div>
       <a href="https://liff.line.me/${LIFF_ID_ADMIN}"
-        style="background:#7c3aed;color:#fff;padding:14px 32px;border-radius:12px;
+        style="background:#bf4c41;color:#fff;padding:14px 32px;border-radius:12px;
           font-size:16px;font-weight:700;text-decoration:none;display:inline-block;">
-        เปิดใน LINE
+         เปิดใน LINE
       </a>
     </div>`;
 }
@@ -408,57 +424,7 @@ function setTomorrow(){
   $('deliveryTime').value = '09:00';
 }
 
-/* ========== Load Drivers ========== */
-async function loadDrivers(){
-  try{
-    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getDrivers`);
-    const data = await res.json();
-    state.drivers = (data.ok && data.drivers) ? data.drivers : [];
-    renderDrivers();
-  }catch(e){
-    renderDriversFallback();
-  }
-}
-
-function renderDrivers(){
-  if (!state.drivers || !state.drivers.length){
-    renderDriversFallback();
-    return;
-  }
-  $('driverHint').style.display = 'block';
-  const html = `<div class="driver-grid">${state.drivers.map(d=>`
-    <div class="driver-option" data-id="${escape_(d.lineUserId)}" data-name="${escape_(d.name)}"
-      onclick="selectDriver('${escape_(d.lineUserId)}','${escape_(d.name)}')">
-      <div class="dname">${escape_(d.name)}</div>
-    </div>`).join('')}
-  </div>`;
-  $('driverSection').innerHTML = html;
-}
-
-function renderDriversFallback(){
-  $('driverHint').style.display = 'none';
-  $('driverSection').innerHTML = `
-    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">
-      ยังไม่มีข้อมูลพนักงาน — เพิ่มข้อมูลในชีต "Drivers" ใน Spreadsheet<br>
-      (คอลัมน์: name, lineUserId, isActive)
-    </div>
-    <input type="text" id="driverNameInput" placeholder="ชื่อพนักงานขับรถ"
-      style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-size:15px;font-family:inherit;margin-bottom:8px;"
-      oninput="state.selectedDriverName=this.value" />
-    <input type="text" id="driverIdInput" placeholder="LINE userId ของพนักงาน (เริ่มต้น U...)"
-      style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-size:15px;font-family:inherit;"
-      oninput="state.selectedDriverId=this.value" />`;
-}
-
-function selectDriver(id, name){
-  document.querySelectorAll('.driver-option').forEach(el=>{
-    el.classList.toggle('selected', el.dataset.id===id);
-  });
-  state.selectedDriverId   = id;
-  state.selectedDriverName = name;
-}
-
-/* ========== Branch dropdown ========== */
+/* ========== Dropdown helpers ========== */
 function toggleOther(selId, othId){
   const sel=$(selId), oth=$(othId);
   if (!sel||!oth) return;
@@ -466,47 +432,52 @@ function toggleOther(selId, othId){
   if (sel.value!=='__other__') oth.value='';
 }
 
-function getPickupLocation(){
-  const sel = $('pickupBranch')?.value||'';
-  const oth = $('pickupOther')?.value.trim()||'';
-  return sel==='__other__' ? oth : sel;
+function togglePickupOther(selId, othId, mapId){
+  const sel=$(selId), oth=$(othId), map=$(mapId);
+  if (!sel) return;
+  const isOther = sel.value==='__other__';
+  if (oth) { oth.style.display = isOther ? 'block' : 'none'; if (!isOther) oth.value=''; }
+  if (map) { map.style.display = isOther ? 'block' : 'none'; if (!isOther) map.value=''; }
 }
 
-/* ========== Google Maps preview ========== */
-function updateMapsPreview(){
-  const v = $('googleMapsUrl').value.trim();
-  const el = $('mapsPreview');
-  if (!v){ el.innerHTML=''; return; }
-  el.innerHTML = `<a href="${encodeURI(v)}" target="_blank">เปิด Google Maps</a>`;
+/* helpers to resolve dropdown + other text */
+function resolveField(selId, othId){
+  const sel=$(selId), oth=$(othId);
+  if (!sel) return '';
+  if (sel.value==='__other__') return oth?.value.trim()||'';
+  return sel.value||'';
 }
 
-/* ========== Collect amount format ========== */
-function formatComma(el){
-  let raw = el.value.replace(/[^0-9]/g,'');
-  if (raw==='') { el.value=''; return; }
-  el.value = Number(raw).toLocaleString('th-TH');
+function resolveFieldWithMap(selId, othId, mapId){
+  const sel=$(selId);
+  if (!sel) return { text:'', map:'' };
+  if (sel.value==='__other__'){
+    return { text: $(othId)?.value.trim()||'', map: $(mapId)?.value.trim()||'' };
+  }
+  return { text: sel.value||'', map: '' };
 }
 
 /* ========== Submit ========== */
 async function submitAssign(){
-  const custName      = $('custName').value.trim();
-  const custPhone     = $('custPhone').value.trim();
+  const jobType       = resolveField('jobType','jobTypeOther');
   const deliveryDate  = $('deliveryDate').value;
   const deliveryTime  = $('deliveryTime').value;
   const bikeModel     = $('bikeModel').value;
-  const bikeColor     = $('bikeColor').value.trim();
-  const pickupLoc     = getPickupLocation();
-  const deliveryDetail= $('deliveryDetail').value.trim();
-  const googleMapsUrl = $('googleMapsUrl').value.trim();
-  const collectAmount = $('collectAmount').value.trim().replace(/,/g,'');
-  const note          = $('note').value.trim();
+  const bikeColor     = $('bikeColor').value.trimm();
+  const origin        = resolveField('origin','originOther');
+  const pickup1       = resolveFieldWithMap('pickup1','pickup1Other','pickup1Map');
+  const pickup2       = resolveFieldWithMap('pickup2','pickup2Other','pickup2Map');
+  const dest          = resolveFieldWithMap('destination','destinationOther','destinationMap');
+  const additionalDetail = $('additionalDetail').value.trim();
 
-  if (!custName)     return toast('กรุณากรอกชื่อ-นามสกุลลูกค้า');
-  if (!deliveryDate) return toast('กรุณาเลือกวันที่จัดส่ง');
-  if (!deliveryTime) return toast('กรุณาระบุเวลาจัดส่ง');
-  if (!bikeModel)    return toast('กรุณาเลือกรุ่นรถ');
-  if (!bikeColor)    return toast('กรุณาระบุสีรถ');
-  if (!pickupLoc)    return toast('กรุณาเลือกสถานที่รับรถ');
+  if (!jobType)       return toast('กรุณาเลือกลักษณะงาน');
+  if (!deliveryDate)  return toast('กรุณาเลือกวันที่');
+  if (!deliveryTime)  return toast('กรุณาระบุเวลา');
+  if (!bikeModel)     return toast('กรุณาเลือกรุ่นรถ');
+  if (!bikeColor)     return toast('กรุณาระบุรายละเอียดรถและสี');
+  if (!origin)        return toast('กรุณาเลือกต้นทาง');
+  if (!pickup1.text)  return toast('กรุณาเลือกสถานที่รับรถ จุดที่ 1');
+  if (!dest.text)     return toast('กรุณาเลือกปลายทาง');
 
   const btn = $('btnSubmit');
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>กำลังส่ง...';
@@ -516,19 +487,19 @@ async function submitAssign(){
     const payload = {
       action,
       ...(state.editAssignId ? { assignId: state.editAssignId } : {}),
-      salesId:       state.profile?.userId     || 'unknown',
-      salesName:     state.profile?.displayName|| 'unknown',
-      customerName:  custName,
-      customerPhone: custPhone,
+      salesId:       state.profile?.userId      || 'unknown',
+      salesName:     state.profile?.displayName || 'unknown',
+      jobType,
       deliveryDate,  deliveryTime,
       bikeModel,     bikeColor,
-      pickupLocation: pickupLoc,
-      deliveryDetail,
-      googleMapsUrl,
-      collectAmount: collectAmount ? parseFloat(collectAmount) : 0,
-      note,
-      driverId:   state.selectedDriverId   || '',
-      driverName: state.selectedDriverName || '',
+      origin,
+      pickup1Location: pickup1.text,
+      pickup1MapUrl:   pickup1.map,
+      pickup2Location: pickup2.text,
+      pickup2MapUrl:   pickup2.map,
+      destination:     dest.text,
+      destinationMapUrl: dest.map,
+      additionalDetail,
       assignedAt: new Date().toISOString()
     };
 
@@ -538,46 +509,44 @@ async function submitAssign(){
 
     state.editAssignId = null;
     $('editBanner').classList.remove('show');
-    showSuccess({ custName, deliveryDate, deliveryTime, bikeModel, bikeColor, pickupLoc,
-      googleMapsUrl, collectAmount, driverName: state.selectedDriverName });
+    showSuccess({ jobType, deliveryDate, deliveryTime, bikeModel, bikeColor,
+      origin, pickup1, pickup2, dest });
   }catch(e){
     console.error('submitAssign error:', e);
     toast('ส่งข้อมูลไม่สำเร็จ: ' + (e?.message||String(e)), 4000);
   }finally{
-    btn.disabled=false; btn.innerHTML='📤 สั่งงานจัดส่ง';
+    btn.disabled=false; btn.innerHTML='📋 มอบหมายงาน';
   }
 }
 
 /* ========== Success Overlay ========== */
 function showSuccess(d){
-  const collectRow = d.collectAmount ? `<div class="srow"><span class="lab">ยอดเรียกเก็บ</span><span class="val">${parseFloat(d.collectAmount).toLocaleString()} บาท</span></div>` : '';
-  const mapsRow    = d.googleMapsUrl ? `<div class="srow"><span class="lab">พิกัด</span><span class="val"><a href="${encodeURI(d.googleMapsUrl)}" target="_blank" style="color:var(--purple);">เปิดแผนที่</a></span></div>` : '';
+  const p2Row = d.pickup2?.text ? `<div class="srow"><span class="lab">รับรถ จุด 2</span><span class="val">${escape_(d.pickup2.text)}</span></div>` : '';
   $('sucSummary').innerHTML = `
-    <div class="srow"><span class="lab">ลูกค้า</span><span class="val">${escape_(d.custName)}</span></div>
+    <div class="srow"><span class="lab">ลักษณะงาน</span><span class="val">${escape_(d.jobType)}</span></div>
     <div class="srow"><span class="lab">วันที่</span><span class="val">${d.deliveryDate} ${d.deliveryTime}</span></div>
-    <div class="srow"><span class="lab">รถ</span><span class="val">${escape_(d.bikeModel)} สี${escape_(d.bikeColor)}</span></div>
-    <div class="srow"><span class="lab">รับรถที่</span><span class="val">${escape_(d.pickupLoc)}</span></div>
-    <div class="srow"><span class="lab">คนขับ</span><span class="val">${escape_(d.driverName||'-')}</span></div>
-    ${mapsRow}${collectRow}`;
+    <div class="srow"><span class="lab">รถ</span><span class="val">${escape_(d.bikeModel)} ${escape_(d.bikeColor)}</span></div>
+    <div class="srow"><span class="lab">ต้นทาง</span><span class="val">${escape_(d.origin)}</span></div>
+    <div class="srow"><span class="lab">รับรถ จุด 1</span><span class="val">${escape_(d.pickup1.text)}</span></div>
+    ${p2Row}
+    <div class="srow"><span class="lab">ปลายทาง</span><span class="val">${escape_(d.dest.text)}</span></div>`;
   $('successOverlay').classList.add('show');
 }
 
 /* ========== Clear Form ========== */
 function clearForm(){
-  $('custName').value  = '';
-  $('custPhone').value = '';
+  $('jobType').value = ''; $('jobTypeOther').style.display='none'; $('jobTypeOther').value='';
+  setTomorrow();
   $('bikeModel').value = '';
   $('bikeColor').value = '';
-  setTomorrow();
-  $('pickupBranch').value = ''; $('pickupOther').style.display='none'; $('pickupOther').value='';
-  $('deliveryDetail').value = '';
-  $('googleMapsUrl').value  = ''; $('mapsPreview').innerHTML = '';
-  $('collectAmount').value  = '';
-  $('note').value = '';
-  state.editAssignId       = null;
-  state.selectedDriverId   = null;
-  state.selectedDriverName = null;
-  document.querySelectorAll('.driver-option').forEach(el=>el.classList.remove('selected'));
+  $('origin').value = ''; $('originOther').style.display='none'; $('originOther').value='';
+  ['pickup1','pickup2','destination'].forEach(id=>{
+    $(id).value='';
+    $(id+'Other').style.display='none'; $(id+'Other').value='';
+    $(id+'Map').style.display='none';   $(id+'Map').value='';
+  });
+  $('additionalDetail').value = '';
+  state.editAssignId = null;
   $('editBanner').classList.remove('show');
 }
 
@@ -623,14 +592,15 @@ function renderHistory(){
       : (!isPending ? '' : `<span style="font-size:11px;color:var(--muted);">เลยวันนัดแล้ว</span>`);
     const cancelNote = h.status==='ยกเลิก' && h.cancelReason
       ? `<div style="font-size:12px;color:var(--danger);margin-top:4px;">เหตุผล: ${escape_(h.cancelReason)}</div>` : '';
+    const route = [h.origin, h.pickup1Location, h.pickup2Location, h.destination].filter(Boolean).join(' → ');
     return `
     <div class="history-item">
       <div class="hi-head">
         <span>${h.deliveryDate||'-'} ${(h.deliveryTime||'').slice(0,5)}</span>
         <span class="status-badge ${sCls}">${sLabel}</span>
       </div>
-      <div class="hi-cust">${escape_(h.customerName||'')}</div>
-      <div class="hi-route">${escape_(h.pickupLocation||'-')} → ${escape_(h.deliveryDetail||'-')}</div>
+      <div class="hi-cust">${escape_(h.jobType||h.customerName||'')}</div>
+      <div class="hi-route">${escape_(route||'-')}</div>
       <div class="hi-driver">มอบหมายโดย: ${escape_(h.salesName||'-')}</div>
       ${cancelNote}
       ${actionBtns}
@@ -672,30 +642,44 @@ function loadAssignToForm(assignId){
   if (!h) return toast('ไม่พบข้อมูลงาน');
   state.editAssignId = assignId;
 
-  $('custName').value       = h.customerName||'';
-  $('custPhone').value      = h.customerPhone||'';
-  $('deliveryDate').value   = h.deliveryDate||'';
-  $('deliveryTime').value   = h.deliveryTime||'';
-  $('bikeModel').value      = h.bikeModel||'';
-  $('bikeColor').value      = h.bikeColor||'';
-  $('deliveryDetail').value = h.deliveryDetail||'';
-  $('note').value           = h.note||'';
+  // job type
+  const jt = h.jobType||'';
+  if (JOB_PRESETS.includes(jt)){ $('jobType').value=jt; $('jobTypeOther').style.display='none'; }
+  else if (jt){ $('jobType').value='__other__'; $('jobTypeOther').style.display='block'; $('jobTypeOther').value=jt; }
 
-  const amt = h.collectAmount ? Number(h.collectAmount).toLocaleString('th-TH') : '';
-  $('collectAmount').value = amt;
+  $('deliveryDate').value = h.deliveryDate||'';
+  $('deliveryTime').value = h.deliveryTime||'';
+  $('bikeModel').value    = h.bikeModel||'';
+  $('bikeColor').value    = h.bikeColor||'';
 
-  const pu = h.pickupLocation||'';
-  if (BRANCH_PRESETS.includes(pu)){
-    $('pickupBranch').value = pu; $('pickupOther').style.display='none';
-  } else if (pu) {
-    $('pickupBranch').value = '__other__'; $('pickupOther').style.display='block'; $('pickupOther').value=pu;
-  }
-  $('googleMapsUrl').value = h.googleMapsUrl||'';
-  updateMapsPreview();
+  // origin
+  const org = h.origin||'';
+  if (BRANCH_PRESETS.includes(org)){ $('origin').value=org; $('originOther').style.display='none'; }
+  else if (org){ $('origin').value='__other__'; $('originOther').style.display='block'; $('originOther').value=org; }
+
+  // pickup 1
+  setPickupField('pickup1', h.pickup1Location||'', h.pickup1MapUrl||'');
+  // pickup 2
+  setPickupField('pickup2', h.pickup2Location||'', h.pickup2MapUrl||'');
+  // destination
+  setPickupField('destination', h.destination||'', h.destinationMapUrl||'');
+
+  $('additionalDetail').value = h.additionalDetail||'';
 
   $('editBanner').classList.add('show');
   showTab('form');
   window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function setPickupField(selId, text, map){
+  const isPreset = PICKUP_PRESETS.includes(text);
+  if (!text){ $(selId).value=''; }
+  else if (isPreset){ $(selId).value=text; $(selId+'Other').style.display='none'; $(selId+'Map').style.display='none'; }
+  else {
+    $(selId).value='__other__';
+    $(selId+'Other').style.display='block'; $(selId+'Other').value=text;
+    $(selId+'Map').style.display='block';   $(selId+'Map').value=map||'';
+  }
 }
 
 function cancelEdit(){ clearForm(); }
@@ -707,9 +691,6 @@ function btnUnlock(el){ if(!el)return; el.disabled=false; if(el._orig!==undefine
 
 /* ========== Bind ========== */
 function bind(){
-  $('collectAmount').addEventListener('input', ()=>formatComma($('collectAmount')));
-  $('pickupBranch').addEventListener('change', ()=>toggleOther('pickupBranch','pickupOther'));
-  $('googleMapsUrl').addEventListener('input', updateMapsPreview);
   $('btnSubmit').addEventListener('click', submitAssign);
   $('btnClear').addEventListener('click', ()=>{ if(confirm('ล้างข้อมูลทั้งหมด?')) clearForm(); });
   $('btnCloseSuc').addEventListener('click', ()=>{
