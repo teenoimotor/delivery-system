@@ -22,7 +22,7 @@
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
-    font-family;"Sarabun","Noto Sans Thai",-apple-system,BlinkMacSystemFont,sans-serif;font-size:15px;line-height:1.45;}
+    font-family:"Sarabun","Noto Sans Thai",-apple-system,BlinkMacSystemFont,sans-serif;font-size:15px;line-height:1.45;}
   header{
     background:var(--purple);color:#fff;padding:14px 16px;
     display:flex;align-items:center;justify-content:space-between;
@@ -339,7 +339,7 @@
 <script>
 /* ===========================================================
    Admin Assignment LIFF — แบบฟอร์มมอบหมายงาน (พนักงานขับรถ)
-   - ตรวจสอบ LINE userId ว่าเป็น Admin (ผ่านน verifyAdmin)
+   - ตรวจสอบ LINE userId ว่าเป็น Admin (ผ่าน verifyAdmin)
    - ส่งงานตรงไปยังพนักงานขับ (ไม่ผ่านกลุ่ม Sales)
    - แจ้งเตือน Admin ทุกคนผ่าน LINE Push
 
@@ -389,7 +389,7 @@ async function initLIFF(){
       return;
     }
 
-    $('userName').textContent = 'ผ่านกรอขสารท: ' + (state.profile.displayName||'-');
+    $('userName').textContent = 'ผู้บริหาร: ' + (state.profile.displayName||'-');
     $('mainPage').style.display = 'block';
     $('footerForm').style.display = 'flex';
     setTomorrow();
@@ -403,14 +403,14 @@ function showLiffError(){
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
       min-height:100vh;padding:32px;font-family:Sarabun,sans-serif;background:#fdf5f5;text-align:center;">
       <div style="font-size:48px;margin-bottom:16px;">📱</div>
-      <div style="font-size:18px;font-weight:700;color:#1f2937;margin-bottom:8px;">กรุณาธการผ่าน LINE</div>
+      <div style="font-size:18px;font-weight:700;color:#1f2937;margin-bottom:8px;">กรุณาเปิดผ่าน LINE</div>
       <div style="font-size:14px;color:#6b7280;margin-bottom:28px;line-height:1.6;">
         ระบบนี้ต้องเปิดผ่านแอป LINE เท่านั้น
       </div>
       <a href="https://liff.line.me/${LIFF_ID_ADMIN}"
         style="background:#bf4c41;color:#fff;padding:14px 32px;border-radius:12px;
           font-size:16px;font-weight:700;text-decoration:none;display:inline-block;">
-         เปิดใน LINE
+        เปิดใน LINE
       </a>
     </div>`;
 }
